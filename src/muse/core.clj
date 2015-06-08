@@ -125,7 +125,7 @@
    (loop [ast-node ast cache {}]
      (let [fetches (next-level ast-node)]
        (if (not (seq fetches))
-         (:value ast-node) ;; should be Done, throw exception otherwise
+         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
          (let [by-type (group-by resource-name fetches)
                fetch-groups (<! (async/map vector (map fetch-group by-type)))
                to-cache (into {} fetch-groups)
