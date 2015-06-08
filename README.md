@@ -28,20 +28,20 @@ Use it in your code:
 ```clojure
 (ns my.ns
   (:require [muse.core :as muse]
-            [clojure.core.async :refer [go <!!]]))
+            [clojure.core.async :refer [go]]))
 
 (defrecord Timeline [username]
-  muse/AResource
+  muse/DataSource
   (fetch [_] (go (range 10))))
 
-(<!! (muse/fmap count (Timeline. "@alexey")))
+(muse/run!! (muse/fmap count (Timeline. "@alexey")))
 ```
 
 ## Example
 
 ```clojure
 (defrecord UserScore [id]
-  muse/AResource
+  muse/DataSource
   (fetch [_] (go (rand 100))))
 ```
 
@@ -74,39 +74,40 @@ You can use monads library that you like, i.e. `core.algo` or `cats`:
 If you came from Haskell you will probably like shortcuts:
 
 ```clojure
+(ns my.ns
+  (:require '[muse.core :refer [run! <$>]])
+
 (defn compare-users
   [id1 id2]
-  (<$> compare (UserScore. id1) (UserScore. id2)))
+  (run! (<$> compare (UserScore. id1) (UserScore. id2))))
 ```
 
-Find more sophisticated examples in `test` directory:
-
-* fetching social timeline
-
-* calculating friends-of-friends list
-
-* and more
+Find more examples in `test` directory and check `muse-examples` repo.
 
 ## How Does It Work?
 
-* you define data sources that you want to work with using `AResource` protocol (describe how `fetch` should be executed)
+* You define data sources that you want to work with using `DataSource` protocol (describe how `fetch` should be executed).
 
-* you declare what do you want to do with the result of each data source fetch (yeah, your resource is a functor now)
+* You declare what do you want to do with the result of each data source fetch. Yeah, right, your data source is a functor now.
 
-* `muse` build AST of all operations placing data source fetching points as leaves (yeah, this is [free monads](http://goo.gl/1ubHUa) approach)
+* You build an AST of all operations placing data source fetching points as leaves using `muse` low-level building blocks (`value`/`fmap`/`flat-map`) and higher-level API (`collect`/`traverse`/etc). Yeah, this is [free monads](http://goo.gl/1ubHUa) approach.
 
-* `muse` implicitely rebuild AST to work with tree levels instead of separated leave that gives ability to batch requests and run independent fetches concurrently
+* `muse` implicitely rebuilds AST to work with tree levels instead of separated leave that gives ability to batch requests and run independent fetches concurrently.
 
-* you call `muse/run!` interpreter that reduce AST level by level until the whole computation is finished
+* `muse/run!` is an interpreter that reduce AST level by level until the whole computation is finished (it returns `core.async` channel that you can read from).
 
-## Future Ideas
+## TODO & Ideas
 
-- [ ] `flat-map` operation
-- [ ] split AResource to few protocols
+- [ ] catch & propagate exceptions
 - [ ] use ReadPort protocol to avoid explicit `run!` call
 - [ ] composibility with `core.algo` and `cats` libraries
-- [ ] catch & propagate exceptions
 - [ ] clean up code, test coverage, better high-level API
+
+## Known Restrictions
+
+* works with `core.async` library only, `future` support is planned
+* assumes you operations with data sources are "side-effects free" so you don't really care about the order of fetches
+* yes, you need enough memory to store the whole data fetched during a single `run!` call (in case it's impossible you should probably look into other ways to solve your problem, i.e. data stream libraries)
 
 ## License
 
