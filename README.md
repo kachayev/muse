@@ -17,27 +17,19 @@ Heavily inspired by:
 
 ## Usage
 
-Add this dependency to your project file:
+Include the following to your lein `project.clj` dependencies:
 
 ```clojure
 [muse "0.3.1"]
 ```
 
-Use it in your code:
+All functions are located in `muse.core`:
 
 ```clojure
-(ns my.ns
-  (:require [muse.core :as muse]
-            [clojure.core.async :refer [go]]))
-
-(defrecord Timeline [username]
-  muse/DataSource
-  (fetch [_] (go (range 10))))
-
-(muse/run!! (muse/fmap count (Timeline. "@alexey")))
+(require '[muse.core :as :muse])
 ```
 
-## Example
+## Examples
 
 ```clojure
 (defrecord UserScore [id]
@@ -90,7 +82,7 @@ Find more examples in `test` directory and check `muse-examples` repo.
 
 * You declare what do you want to do with the result of each data source fetch. Yeah, right, your data source is a functor now.
 
-* You build an AST of all operations placing data source fetching points as leaves using `muse` low-level building blocks (`value`/`fmap`/`flat-map`) and higher-level API (`collect`/`traverse`/etc). Yeah, this is [free monads](http://goo.gl/1ubHUa) approach.
+* You build an AST of all operations placing data source fetching points as leaves using `muse` low-level building blocks (`value`/`fmap`/`flat-map`) and higher-level API (`collect`/`traverse`/etc). Read more about [free monads](http://goo.gl/1ubHUa) approach.
 
 * `muse` implicitely rebuilds AST to work with tree levels instead of separated leave that gives ability to batch requests and run independent fetches concurrently.
 
@@ -106,7 +98,7 @@ Find more examples in `test` directory and check `muse-examples` repo.
 ## Known Restrictions
 
 * works with `core.async` library only, `future` support is planned
-* assumes you operations with data sources are "side-effects free" so you don't really care about the order of fetches
+* assumes your operations with data sources are "side-effects free", so you don't really care about the order of fetches
 * yes, you need enough memory to store the whole data fetched during a single `run!` call (in case it's impossible you should probably look into other ways to solve your problem, i.e. data stream libraries)
 
 ## License
