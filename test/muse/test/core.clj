@@ -33,3 +33,7 @@
   (is (= 50 (run!! (fmap count (fmap concat (List. 30) (List. 20))))))
   (is (= [15 15] (run!! (flat-map mk-pair (Single. 15)))))
   (is (= 60 (run!! (fmap sum-pair (flat-map mk-pair (Single. 30)))))))
+
+(deftest higher-level-api
+  (is (= [0 1] (run!! (collect [(Single. 0) (Single. 1)]))))
+  (is (= [[0 0] [1 1]] (run!! (traverse mk-pair (List. 2))))))
