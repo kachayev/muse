@@ -37,3 +37,31 @@
 (deftest higher-level-api
   (is (= [0 1] (run!! (collect [(Single. 0) (Single. 1)]))))
   (is (= [[0 0] [1 1]] (run!! (traverse mk-pair (List. 2))))))
+
+;; attention! never do such mutations within "fetch" in real code
+(defrecord Trackable [tracker seed]
+  DataSource
+  (fetch [_] (go (swap! tracker inc) seed))
+  LabeledSource
+  (resource-id [_] seed))
+
+(defrecord TrackableId [tracker id]
+  DataSource
+  (fetch [_] (go (swap! tracker inc) id)))
+
+(deftest caching
+  ;; w explicit source labeling
+  (let [t (atom 0)]
+    (is (= 40 (run!! (fmap + (Trackable. t 10) (Trackable. t 10) (Trackable. t 20)))))
+    (is (= 2 @t)))
+  ;; w/o explicit source labeling
+  (let [t2 (atom 0)]
+    (is (= 100 (run!! (fmap * (TrackableId. t2 10) (TrackableId. t2 10)))))
+    (is (= 1 @t2)))
+  ;; different tree branches/levels
+  (let [t3 (atom 0)]
+    (is (= 140 (run!! (fmap +
+                            (Trackable. t3 50)
+                            (fmap (fn [[a b]] (+ a b))
+                                  (collect [(Trackable. t3 40) (Trackable. t3 50)]))))))
+    (is (= 2 @t3))))
