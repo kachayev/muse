@@ -53,6 +53,7 @@ Find the most active user:
 (defn most-active-user []
   (muse/run! (->> (range 100)
                   (map (fn [id] (muse/fmap vector id (UserScore. id))))
+                  muse/collect
                   (muse/fmap #(->> % (sort-by second) ffirst)))))
 ```
 
