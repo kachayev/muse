@@ -17,6 +17,8 @@ Heavily inspired by:
 
 ## Usage
 
+*Attention! API is subject to change*
+
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
