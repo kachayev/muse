@@ -26,7 +26,7 @@ Include the following to your lein `project.clj` dependencies:
 All functions are located in `muse.core`:
 
 ```clojure
-(require '[muse.core :as :muse])
+(require '[muse.core :as muse])
 ```
 
 ## Examples
