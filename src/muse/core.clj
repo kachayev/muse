@@ -95,12 +95,11 @@
 (def <$> fmap)
 (defn >>= [muse f] (flat-map f muse))
 
-;; xxx: better high-level API
 (defn collect [muses]
   (apply (partial fmap vector) muses))
 
-(defn traverse [f coll-muse]
-  (flat-map #(collect (map f %)) coll-muse))
+(defn traverse [f muses]
+  (flat-map #(collect (map f %)) muses))
 
 (defn next-level [ast-node]
   (if (satisfies? DataSource ast-node)
@@ -120,7 +119,15 @@
                        (into {} (map vector ids fetch-results))))))))]))
 
 ;; xxx: catch & propagate exceptions
-(defn run! [ast]
+(defn run!
+  "Asynchronously executes the body, returning immediately to the
+  calling thread. Rebuild body AST in order to:
+  * fetch data sources async (when possible)
+  * cache result of previously made fetches
+  * batch calls to the same data source (when applicable)
+  Returns a channel which will receive the result of
+  the body when completed."
+  [ast]
   (go
    (loop [ast-node ast cache {}]
      (let [fetches (next-level ast-node)]
@@ -132,5 +139,8 @@
                next-cache (into cache to-cache)]
            (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
 
-(defn run!! [ast]
+(defn run!!
+  "takes a val from the channel return by (run! ast).
+  Will block if nothing is available."
+  [ast]
   (<!! (run! ast)))
