@@ -31,50 +31,77 @@ All functions are located in `muse.core`:
 (require '[muse.core :as muse])
 ```
 
-## Examples
+## Quickstart
+
+Simplest operations:
 
 ```clojure
-(defrecord UserScore [id]
-  muse/DataSource
-  (fetch [_] (go (rand 100))))
+user=> (require '[muse.core :refer :all] :reload)
+nil
+user=> (require '[clojure.core.async :refer [go]])
+nil
+user=> (defrecord Timeline [id]
+  #_=>   DataSource
+  #_=>   (fetch [_] (go (range id))))
+user.Timeline
+user=> (Timeline. 10)
+#user.Timeline{:id 10}
+user=> (run! (Timeline. 10))
+#<ManyToManyChannel clojure.core.async.impl.channels.ManyToManyChannel@63a01449>
+user=> (<!! (run! (Timeline. 10)))
+(0 1 2 3 4 5 6 7 8 9)
+user=> (run!! (Timeline. 5))
+(0 1 2 3 4)
+user=> (fmap count (Timeline. 10))
+#<MuseMap (clojure.core$count@3d804ede user.Timeline[10])>
+user=> (run!! (fmap count (Timeline. 10)))
+10
+user=> (fmap inc (fmap count (Timeline. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@58dc9797 user.Timeline[3])>
+user=> (run!! (fmap inc (fmap count (Timeline. 3))))
+4
 ```
 
-Compare 2 users activity:
+Nested data fetches:
 
 ```clojure
-(defn compare-users
-  [id1 id2]
-  (muse/run! (muse/fmap compare (UserScore. id1) (UserScore. id2))))
-```
-
-Find the most active user:
-
-```clojure
-(defn most-active-user []
-  (muse/run! (->> (range 100)
-                  (map (fn [id] (muse/fmap vector id (UserScore. id))))
-                  muse/collect
-                  (muse/fmap #(->> % (sort-by second) ffirst)))))
-```
-
-You can use monads library that you like, i.e. `core.algo` or `cats`:
-
-```clojure
-(defn fetch-post [id]
-  (mlet [post (Post. id)
-         user (User. (:author-id post))]
-    (return (assoc post :author user))))
+user=> (defrecord Post [id]
+  #_=>   DataSource
+  #_=>   (fetch [_] (go (inc id))))
+user=> (flat-map ->Post (->Post 3))
+#<MuseFlatMap (user$eval10466$__GT_Post__10498@411c0aeb user.Post[3])>
+user=> (run!! (flat-map ->Post (->Post 3)))
+5
+user=> (run!! (flat-map ->Post (fmap count (Timeline. 4))))
+5
+user=> (traverse ->Post (Timeline. 3))
+#<MuseFlatMap (muse.core$traverse$fn__10255@7ed127e0 user.Timeline[3])>
+user=> (run!! (traverse ->Post (Timeline. 3)))
+[1 2 3]
 ```
 
 If you came from Haskell you will probably like shortcuts:
 
 ```clojure
-(ns my.ns
-  (:require '[muse.core :refer [run! <$>]])
+user=> (<$> inc (<$> count (Timeline. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@6f2c4a58 user.Timeline[3])>
+user=> (run!! (<$> inc (<$> count (Timeline. 3))))
+4
+```
 
-(defn compare-users
-  [id1 id2]
-  (run! (<$> compare (UserScore. id1) (UserScore. id2))))
+Custom labeling:
+
+```clojure
+user=> (defrecord User [username]
+  #_=>   DataSource
+  #_=>   (fetch [_] (go (str "My name is " username)))
+  #_=>   LabeledSource
+  #_=>   (resource-id [_] username))
+user.User
+user=> (fmap #(str "What I've got: " %) (User. "Alexey"))
+#<MuseMap (user$eval10562$fn__10563@184f2656 user.User[Alexey])>
+user=> (run!! (fmap #(str "What I've got is: " %) (User. "Alexey")))
+"What I've got is: My name is Alexey"
 ```
 
 Find more examples in `test` directory and check `muse-examples` repo.
