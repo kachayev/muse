@@ -1,5 +1,6 @@
 (ns muse.core
-  (:require [clojure.core.async :as async :refer [go <! >! <!! >!!]]))
+  (:require [clojure.string :as s]
+            [clojure.core.async :as async :refer [go <! >! <!! >!!]]))
 
 (defprotocol DataSource
   (fetch [this]))
@@ -15,6 +16,7 @@
   (.getName (.getClass v)))
 
 (defprotocol MuseAST
+  (childs [this])
   (inject [this env])
   (done? [this]))
 
@@ -23,15 +25,18 @@
 
 (defrecord MuseDone [value]
   MuseAST
+  (childs [_] nil)
   (done? [_] true)
   (inject [this _] this))
 
-(defn cache-id [res]
+(defn cache-id
+  [res]
   (if (satisfies? LabeledSource res)
     (resource-id res)
     (:id res)))
 
-(defn cache-path [res]
+(defn cache-path
+  [res]
   [(resource-name res) (cache-id res)])
 
 (defn cached-or [env res]
@@ -45,23 +50,40 @@
     (cached-or env node)
     (inject node env)))
 
-(defrecord MuseMap [f values]
+(defn print-node
+  [node]
+  (if (satisfies? DataSource node)
+    (str (resource-name node) "[" (cache-id node) "]")
+    (with-out-str (print node))))
+
+(defn print-childs
+  [nodes]
+  (s/join " " (map print-node nodes)))
+
+(deftype MuseMap [f values]
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
+
   MuseAST
+  (childs [_] values)
   (done? [_] false)
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
       (if (= (count next) (count (filter done? next)))
         (MuseDone. (apply f (map :value next)))
-        (MuseMap. f next)))))
+        (MuseMap. f next))))
 
-(defn assert-ast! [ast]
+  Object
+  (toString [_] (str "(" f " " (print-childs values) ")")))
+
+(defn assert-ast!
+  [ast]
   (assert (or (satisfies? MuseAST ast)
               (satisfies? DataSource ast))))
 
-(defrecord MuseFlatMap [f values]
+(deftype MuseFlatMap [f values]
   MuseAST
+  (childs [_] values)
   (done? [_] false)
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
@@ -69,44 +91,59 @@
         (let [result (apply f (map :value next))]
           ;; xxx: refactor to avoid dummy leaves creation
           (if (satisfies? DataSource result) (MuseMap. identity [result]) result))
-        (MuseFlatMap. f next)))))
+        (MuseFlatMap. f next))))
 
-(defrecord MuseValue [value]
+  Object
+  (toString [_] (str "(" f " " (print-childs values) ")")))
+
+(deftype MuseValue [value]
   ComposedAST
   (compose-ast [_ f2] (MuseValue. (f2 value)))
-  MuseAST
-  (done? [_] false)
-  (inject [_ env] (MuseDone. value)))
 
-(defn value [v]
+  MuseAST
+  (childs [_] nil)
+  (done? [_] false)
+  (inject [_ env] (MuseDone. value))
+
+  Object
+  (toString [_] (print-node value)))
+
+(defn value
+  [v]
   (MuseValue. v))
 
-(defn fmap [f muse & muses]
+(defn fmap
+  [f muse & muses]
   (if (and (not (seq muses))
            (satisfies? ComposedAST muse))
     (compose-ast muse f)
     (MuseMap. f (cons muse muses))))
 
 ;; xxx: make it compatible with algo.generic and cats libraries
-(defn flat-map [f muse & muses]
+(defn flat-map
+  [f muse & muses]
   (MuseFlatMap. f (cons muse muses)))
 
 ;; xxx: use macro instead for auto-partial function building
 (def <$> fmap)
 (defn >>= [muse f] (flat-map f muse))
 
-(defn collect [muses]
+(defn collect
+  [muses]
   (apply (partial fmap vector) muses))
 
-(defn traverse [f muses]
+(defn traverse
+  [f muses]
   (flat-map #(collect (map f %)) muses))
 
-(defn next-level [ast-node]
+(defn next-level
+  [ast-node]
   (if (satisfies? DataSource ast-node)
     (list ast-node)
-    (if-let [values (:values ast-node)] (mapcat next-level values) '())))
+    (if-let [values (childs ast-node)] (mapcat next-level values) '())))
 
-(defn fetch-group [[rname [head & tail]]]
+(defn fetch-group
+  [[rname [head & tail]]]
   (go [rname
        (if (not (seq tail))
          (let [res (<! (fetch head))] {(cache-id head) res})

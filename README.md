@@ -94,13 +94,12 @@ Find more examples in `test` directory and check `muse-examples` repo.
 ## TODO & Ideas
 
 - [ ] catch & propagate exceptions
-- [ ] use ReadPort protocol to avoid explicit `run!` call
 - [ ] composibility with `core.algo` and `cats` libraries
 - [ ] clean up code, test coverage, better high-level API
 
 ## Known Restrictions
 
-* works with `core.async` library only, `future` support is planned
+* works with `core.async` library only (if you use other async mechanism, like `future`s you can easialy turn your code to be compatible with `core.async`, i.e. with `async/thread`)
 * assumes your operations with data sources are "side-effects free", so you don't really care about the order of fetches
 * yes, you need enough memory to store the whole data fetched during a single `run!` call (in case it's impossible you should probably look into other ways to solve your problem, i.e. data stream libraries)
 
