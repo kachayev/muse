@@ -38,7 +38,7 @@ Simplest operations:
 ```clojure
 user=> (require '[muse.core :refer :all] :reload)
 nil
-user=> (require '[clojure.core.async :refer [go]])
+user=> (require '[clojure.core.async :refer [go <!!]])
 nil
 user=> (defrecord Timeline [id]
   #_=>   DataSource
