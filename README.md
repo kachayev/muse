@@ -40,52 +40,52 @@ user=> (require '[muse.core :refer :all] :reload)
 nil
 user=> (require '[clojure.core.async :refer [go <!!]])
 nil
-user=> (defrecord Timeline [id]
+user=> (defrecord Range [id]
   #_=>   DataSource
   #_=>   (fetch [_] (go (range id))))
-user.Timeline
-user=> (Timeline. 10)
-#user.Timeline{:id 10}
-user=> (run! (Timeline. 10))
+user.Range
+user=> (Range. 10)
+#user.Range{:id 10}
+user=> (run! (Range. 10))
 #<ManyToManyChannel clojure.core.async.impl.channels.ManyToManyChannel@63a01449>
-user=> (<!! (run! (Timeline. 10)))
+user=> (<!! (run! (Range. 10)))
 (0 1 2 3 4 5 6 7 8 9)
-user=> (run!! (Timeline. 5))
+user=> (run!! (Range. 5))
 (0 1 2 3 4)
-user=> (fmap count (Timeline. 10))
-#<MuseMap (clojure.core$count@3d804ede user.Timeline[10])>
-user=> (run!! (fmap count (Timeline. 10)))
+user=> (fmap count (Range. 10))
+#<MuseMap (clojure.core$count@3d804ede user.Range[10])>
+user=> (run!! (fmap count (Range. 10)))
 10
-user=> (fmap inc (fmap count (Timeline. 3)))
-#<MuseMap (clojure.core$comp$fn__4192@58dc9797 user.Timeline[3])>
-user=> (run!! (fmap inc (fmap count (Timeline. 3))))
+user=> (fmap inc (fmap count (Range. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@58dc9797 user.Range[3])>
+user=> (run!! (fmap inc (fmap count (Range. 3))))
 4
 ```
 
 Nested data fetches:
 
 ```clojure
-user=> (defrecord Post [id]
+user=> (defrecord Inc [id]
   #_=>   DataSource
   #_=>   (fetch [_] (go (inc id))))
-user=> (flat-map ->Post (->Post 3))
-#<MuseFlatMap (user$eval10466$__GT_Post__10498@411c0aeb user.Post[3])>
-user=> (run!! (flat-map ->Post (->Post 3)))
+user=> (flat-map ->Inc (->Inc 3))
+#<MuseFlatMap (user$eval10466$__GT_Inc__10498@411c0aeb user.Inc[3])>
+user=> (run!! (flat-map ->Inc (->Inc 3)))
 5
-user=> (run!! (flat-map ->Post (fmap count (Timeline. 4))))
+user=> (run!! (flat-map ->Inc (fmap count (Range. 4))))
 5
-user=> (traverse ->Post (Timeline. 3))
-#<MuseFlatMap (muse.core$traverse$fn__10255@7ed127e0 user.Timeline[3])>
-user=> (run!! (traverse ->Post (Timeline. 3)))
+user=> (traverse ->Inc (Range. 3))
+#<MuseFlatMap (muse.core$traverse$fn__10255@7ed127e0 user.Range[3])>
+user=> (run!! (traverse ->Inc (Range. 3)))
 [1 2 3]
 ```
 
 If you came from Haskell you will probably like shortcuts:
 
 ```clojure
-user=> (<$> inc (<$> count (Timeline. 3)))
-#<MuseMap (clojure.core$comp$fn__4192@6f2c4a58 user.Timeline[3])>
-user=> (run!! (<$> inc (<$> count (Timeline. 3))))
+user=> (<$> inc (<$> count (Range. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@6f2c4a58 user.Range[3])>
+user=> (run!! (<$> inc (<$> count (Range. 3))))
 4
 ```
 
@@ -105,6 +105,73 @@ user=> (run!! (fmap #(str "What I've got is: " %) (User. "Alexey")))
 ```
 
 Find more examples in `test` directory and check `muse-examples` repo.
+
+## Real-World Data Sources
+
+HTTP calls:
+
+```clojure
+(require '[muse.core :refer :all])
+(require '[org.httpkit.client :as http])
+(require '[clojure.core.async :refer [chan put!]])
+
+(defn async-get [url]
+  (let [c (chan 1)] (http/get url (fn [res] (put! c res))) c))
+
+(defrecord Gist [id]
+  DataSource
+  (fetch [_] (async-get (str "https://gist.github.com/" id))))
+
+(defn gist-size [{:keys [headers]}]
+  (get headers "Content-Size"))
+
+(run!! (fmap gist-size (Gist. "21e7fe149bc5ae0bd878")))
+
+(defn gist [id] (fmap gist-size (Gist. id)))
+
+;; will fetch 2 gists concurrently
+(run!! (fmap compare (gist "21e7fe149bc5ae0bd878") (gist "b5887f66e2985a21a466")))
+```
+
+SQL databases:
+
+```clojure
+(require '[clojure.string :as s])
+(require '[clojure.core.async :as async :refer [<! go]])
+(require '[muse.core :refer :all])
+(require '[postgres.async :refer :all])
+
+(defrecord Post [limit]
+  DataSource
+  (fetch [_]
+    (async/map :rows [(execute! db ["select id, user, title, text from posts limit $1" limit])]))
+  LabeledSource
+  (resource-id [_] limit))
+
+(defrecord User [id]
+  DataSource
+  (fetch [_]
+    (async/map :rows [(execute! db ["select id, name from users where id = $1" id])]))
+
+  BatchedSource
+  (fetch-multi [_ users]
+    (let [all-ids (cons id (map :id users))
+          query (str "select id, name from users where id IN (" (s/join "," all-ids) ")")]
+      (go
+        (let [{:keys [rows]} (<! (execute! db [query]))]
+          (into {} (map (fn [{:keys [id] :as row}] [id row]) rows)))))))
+
+(defn attach-author [{:keys [user] :as post}]
+  (fmap #(assoc post :user %) (User. user)))
+
+(defn fetch-posts [limit]
+  (traverse attach-author (Posts. limit)))
+
+;; will execute 2 SQL queries instead of 11
+(run!! (fetch-posts 10))
+```
+
+You can do the same tricks with [Redis](https://github.com/benashford/redis-async).
 
 ## How Does It Work?
 
