@@ -1,6 +1,20 @@
 (ns muse.core
   (:require [clojure.string :as s]
-            [clojure.core.async :as async :refer [go <! >! <!! >!!]]))
+            [clojure.core.async :as async :refer [go <! >! <!! >!!]]
+            [cats.protocols :as proto]
+            [cats.core :as m]))
+
+(declare fmap)
+(declare flat-map)
+
+(def ast-monad
+  (reify
+    proto/Functor
+    (fmap [_ f mv] (fmap f mv))
+
+    proto/Monad
+    (mreturn [_ v] v)
+    (mbind [_ mv f] (flat-map f mv))))
 
 (defprotocol DataSource
   (fetch [this]))
@@ -61,6 +75,9 @@
   (s/join " " (map print-node nodes)))
 
 (deftype MuseMap [f values]
+  proto/Context
+  (get-context [_] ast-monad)
+  
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -82,6 +99,9 @@
               (satisfies? DataSource ast))))
 
 (deftype MuseFlatMap [f values]
+  proto/Context
+  (get-context [_] ast-monad)
+
   MuseAST
   (childs [_] values)
   (done? [_] false)
@@ -97,13 +117,23 @@
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
 (deftype MuseValue [value]
+  proto/Context
+  (get-context [_] ast-monad)
+
   ComposedAST
-  (compose-ast [_ f2] (MuseValue. (f2 value)))
+  (compose-ast [_ f2]
+    (if (satisfies? DataSource value)
+      (MuseMap. f2 [value])
+      (MuseValue. (f2 value))))
 
   MuseAST
-  (childs [_] nil)
-  (done? [_] false)
-  (inject [_ env] (MuseDone. value))
+  (childs [_] (if (satisfies? DataSource value) [value] nil))
+  (done? [_] (not (satisfies? DataSource value)))
+  (inject [_ env]
+    (if (satisfies? DataSource value)
+      (let [next (inject-into env value)]
+        (if (done? next) (MuseDone. (:value next)) next))
+      (MuseDone. value)))
 
   Object
   (toString [_] (print-node value)))
