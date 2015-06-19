@@ -38,6 +38,15 @@
   (is (= [0 1] (run!! (collect [(Single. 0) (Single. 1)]))))
   (is (= [[0 0] [1 1]] (run!! (traverse mk-pair (List. 2))))))
 
+(defn recur-next [seed]
+  (if (= 5 seed)
+    (value seed)
+    (flat-map recur-next (Single. (inc seed)))))
+
+(deftest recur-with-value
+  (is (= 10 (run!! (value 10))))
+  (is (= 5 (run!! (flat-map recur-next (Single. 0))))))
+
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
   DataSource

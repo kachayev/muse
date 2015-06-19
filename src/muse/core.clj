@@ -19,6 +19,7 @@
 (defprotocol DataSource
   (fetch [this]))
 
+;; xxx: it should be possible to specify source name
 (defprotocol LabeledSource
   (resource-id [this]))
 
@@ -38,6 +39,12 @@
   (compose-ast [this f]))
 
 (defrecord MuseDone [value]
+  proto/Context
+  (get-context [_] ast-monad)
+
+  ComposedAST
+  (compose-ast [_ f2] (MuseDone. (f2 value)))
+
   MuseAST
   (childs [_] nil)
   (done? [_] true)
@@ -121,26 +128,23 @@
   (get-context [_] ast-monad)
 
   ComposedAST
-  (compose-ast [_ f2]
-    (if (satisfies? DataSource value)
-      (MuseMap. f2 [value])
-      (MuseValue. (f2 value))))
+  (compose-ast [_ f2] (MuseMap. f2 [value]))
 
   MuseAST
-  (childs [_] (if (satisfies? DataSource value) [value] nil))
-  (done? [_] (not (satisfies? DataSource value)))
+  (childs [_] [value])
+  (done? [_] false)
   (inject [_ env]
-    (if (satisfies? DataSource value)
-      (let [next (inject-into env value)]
-        (if (done? next) (MuseDone. (:value next)) next))
-      (MuseDone. value)))
+    (let [next (inject-into env value)]
+      (if (done? next) (MuseDone. (:value next)) next)))
 
   Object
   (toString [_] (print-node value)))
 
 (defn value
   [v]
-  (MuseValue. v))
+  (if (satisfies? DataSource value)
+    (MuseValue. v)
+    (MuseDone. v)))
 
 (defn fmap
   [f muse & muses]
