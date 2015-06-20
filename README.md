@@ -74,59 +74,173 @@ All functions are located in `muse.core`:
 
 ## Quickstart
 
-Simplest operations:
+Simple helper to emulate async request to the remote source with unpredictable response latency:
 
 ```clojure
-user=> (require '[muse.core :refer :all] :reload)
-nil
-user=> (require '[clojure.core.async :refer [go <!!]])
-nil
-user=> (defrecord Range [id]
-  #_=>   DataSource
-  #_=>   (fetch [_] (go (range id))))
-user.Range
-user=> (Range. 10)
-#user.Range{:id 10}
-user=> (run! (Range. 10))
-#<ManyToManyChannel clojure.core.async.impl.channels.ManyToManyChannel@63a01449>
-user=> (<!! (run! (Range. 10)))
-(0 1 2 3 4 5 6 7 8 9)
-user=> (run!! (Range. 5))
-(0 1 2 3 4)
-user=> (fmap count (Range. 10))
-#<MuseMap (clojure.core$count@3d804ede user.Range[10])>
-user=> (run!! (fmap count (Range. 10)))
+(require '[clojure.core.async :refer [go <!! <! timeout]])
+
+(defn remote-req [id result]
+  (let [wait (rand 1000)]
+    (println "-->" id ".." wait)
+    (go
+     (<! (timeout wait))
+     (println "<--" id)
+     result)))
+```
+
+Define data source (list of friends by given user id):
+
+```clojure
+(require '[muse.core :refer :all])
+
+(defrecord FriendsOf [id]
+  DataSource
+  (fetch [_] (remote-req id (set (range id)))))
+```
+
+Run simplest scenario:
+
+```clojure
+core> (FriendsOf. 10)
+#core.FriendsOf{:id 10}
+core> (run! (FriendsOf. 10)) ;; returns channel
+#<ManyToManyChannel clojure.core.async.impl.channels.ManyToManyChannel@1aeaa839>
+core> (<!! (run! (FriendsOf. 10)))
+--> 10 .. 342.97080768100585
+<-- 10
+#{0 7 1 4 6 3 2 9 5 8}
+core> (run!! (FriendsOf. 10)) ;; blocks until done
+--> 10 .. 834.4564727277141
+<-- 10
+#{0 7 1 4 6 3 2 9 5 8}
+```
+
+There is nothing special about it (yet), let's do something more interesting:
+
+```clojure
+core> (fmap count (FriendsOf. 10))
+#<MuseMap (clojure.core$count@1b932280 core.FriendsOf[10])>
+core> (run!! (fmap count (FriendsOf. 10)))
+--> 10 .. 844.5086574753595
+<-- 10
 10
-user=> (fmap inc (fmap count (Range. 3)))
-#<MuseMap (clojure.core$comp$fn__4192@58dc9797 user.Range[3])>
-user=> (run!! (fmap inc (fmap count (Range. 3))))
+core> (fmap inc (fmap count (FriendsOf. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@4275ef0b core.FriendsOf[3])>
+core> (run!! (fmap inc (fmap count (FriendsOf. 3))))
+--> 3 .. 334.5374146247876
+<-- 3
 4
 ```
 
-Nested data fetches:
+Let's imaging we have another data source: activit score for user by given user id.
 
 ```clojure
-user=> (defrecord Inc [id]
-  #_=>   DataSource
-  #_=>   (fetch [_] (go (inc id))))
-user=> (flat-map ->Inc (->Inc 3))
-#<MuseFlatMap (user$eval10466$__GT_Inc__10498@411c0aeb user.Inc[3])>
-user=> (run!! (flat-map ->Inc (->Inc 3)))
-5
-user=> (run!! (flat-map ->Inc (fmap count (Range. 4))))
-5
-user=> (traverse ->Inc (Range. 3))
-#<MuseFlatMap (muse.core$traverse$fn__10255@7ed127e0 user.Range[3])>
-user=> (run!! (traverse ->Inc (Range. 3)))
-[1 2 3]
+(defrecord ActivityScore [id]
+  DataSource
+  (fetch [_] (remote-req id (inc id))))
 ```
+
+Nested data fetches (you can see 2 levels of execution):
+
+```clojure
+(defn random-friend-activity []
+  (->> (FriendsOf. 10)
+       (fmap first)
+       (flat-map #(ActivityScore. %))))
+
+core> (run!! (rand-friend-activity))
+--> 10 .. 576.5833162596521
+<-- 10
+--> 0 .. 275.28637368204966
+<-- 0
+1
+```
+
+And now few amaizing facts.
+
+```clojure
+(require '[clojure.set :refer [intersection]])
+
+(defn num-common-friends [x y]
+  (fmap count (fmap intersection (FriendsOf. x) (FriendsOf. y))))
+```
+
+1. `muse` automatically runs fetches concurrently:
+
+```clojure
+core> (run!! (num-common-friends 3 4))
+--> 3 .. 374.6445696819365
+--> 4 .. 162.1603407048976
+<-- 4
+<-- 3
+3
+```
+
+2. `muse` detects duplicated requests and cache results to avoid redundant work:
+
+```clojure
+core> (run!! (num-common-friends 5 5))
+--> 5 .. 781.2024344113081
+<-- 5
+5
+```
+
+3. seq operations will also run concurrently:
+
+```clojure
+(defn frieds-of-friends [id]
+  (->> (FriendsOf. id)
+       (traverse #(FriendsOf. %))
+       (fmap (partial apply concat))
+       (fmap set)))
+
+core> (run!! (frieds-of-friends 5))
+--> 5 .. 942.2654519658018
+<-- 5
+--> 0 .. 429.0184498546441
+--> 1 .. 316.54859989009765
+--> 4 .. 365.7622736084006
+--> 3 .. 752.5111238688877
+--> 2 .. 618.4316806897967
+<-- 1
+<-- 4
+<-- 0
+<-- 2
+<-- 3
+#{0 1 3 2}
+```
+
+4. you can implement `BatchedSource` protocol to tell `muse` how to batch requests:
+
+```clojure
+(defrecord FriendsOf [id]
+  DataSource
+  (fetch [_] (remote-req id (set (range id))))
+
+  BatchedSource
+  (fetch-multi [_ users]
+    (let [ids (cons id (map :id users))]
+      (->> ids
+           (map #(vector %1 (set (range %1))))
+           (into {})
+           (remote-req ids)))))
+
+core> (run!! (frieds-of-friends 5))
+--> 5 .. 13.055500150089605
+<-- 5
+--> (0 1 4 3 2) .. 436.6121922156462
+<-- (0 1 4 3 2)
+#{0 1 3 2}
+```
+
+## Misc
 
 If you came from Haskell you will probably like shortcuts:
 
 ```clojure
-user=> (<$> inc (<$> count (Range. 3)))
-#<MuseMap (clojure.core$comp$fn__4192@6f2c4a58 user.Range[3])>
-user=> (run!! (<$> inc (<$> count (Range. 3))))
+core> (<$> inc (<$> count (FriendsOf. 3)))
+#<MuseMap (clojure.core$comp$fn__4192@6f2c4a58 core.FriendsOf[3])>
+core> (run!! (<$> inc (<$> count (FriendsOf. 3))))
 4
 ```
 
