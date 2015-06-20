@@ -4,9 +4,9 @@
 
 Often times your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
 
-* batch multiple requests (if batching protocol is defined for the data source)
+* batch multiple requests to the same data source
 * request data from multiple data sources concurrently
-* cache previous results to reduce # of fetch requests
+* cache previous requests
 
 Having all this gives you the ability to access remote data sources in a concise and consistent way, while the library handles batching and overlapping requests to multiple data sources behind the scenes.
 
@@ -14,6 +14,47 @@ Heavily inspired by:
 
 * [Haxl](https://github.com/facebook/Haxl) - Haskell library, Facebook, open-sourced
 * [Stitch](https://www.youtube.com/watch?v=VVpmMfT8aYw) - Scala library, Twitter, not open-sourced
+
+## The Idea
+
+A core problem of many systems is balancing expressiveness against performance.
+
+```clojure
+(defn num-common-friends
+  [x y]
+  (count (set/intersection (friends-of x) (friends-of y))))
+```
+
+Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to be fetched concurrently in a single batch. Furthermore, if `x` and `y` refer to the same person, you don't want redundantly re-fetch their friend list.
+
+*Muse* allows your data fetches to be implicitly concurrent:
+
+```clojure
+(defn num-common-friends
+  [x y]
+  (run! (fmap count (fmap set/intersection (friends-of x) (friends-of y)))))
+```
+
+Mapping over list will also run concurrently:
+
+```clojure
+(defn friends-of-friends
+  [id]
+  (run! (->> id
+             friends-of
+             (traverse friends-of)
+             (fmap (partial apply concat)))))
+```
+
+You can also use monad interface with `cats` library (still experimental):
+
+```clojure
+(defn num-common-friends
+  [x y]
+  (run! (m/mlet [fx (friends-of x)
+                 fy (friends-of y)]
+          (m/return (count (set/intersection fx fy))))))
+```
 
 ## Usage
 
