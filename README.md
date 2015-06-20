@@ -165,7 +165,7 @@ And now few amaizing facts.
   (fmap count (fmap intersection (FriendsOf. x) (FriendsOf. y))))
 ```
 
-1. `muse` automatically runs fetches concurrently:
+1) `muse` automatically runs fetches concurrently:
 
 ```clojure
 core> (run!! (num-common-friends 3 4))
@@ -176,7 +176,7 @@ core> (run!! (num-common-friends 3 4))
 3
 ```
 
-2. `muse` detects duplicated requests and cache results to avoid redundant work:
+2) `muse` detects duplicated requests and cache results to avoid redundant work:
 
 ```clojure
 core> (run!! (num-common-friends 5 5))
@@ -185,7 +185,7 @@ core> (run!! (num-common-friends 5 5))
 5
 ```
 
-3. seq operations will also run concurrently:
+3) seq operations will also run concurrently:
 
 ```clojure
 (defn frieds-of-friends [id]
@@ -210,7 +210,7 @@ core> (run!! (frieds-of-friends 5))
 #{0 1 3 2}
 ```
 
-4. you can implement `BatchedSource` protocol to tell `muse` how to batch requests:
+4) you can implement `BatchedSource` protocol to tell `muse` how to batch requests:
 
 ```clojure
 (defrecord FriendsOf [id]
