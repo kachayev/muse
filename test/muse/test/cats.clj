@@ -17,6 +17,7 @@
   (resource-id [_] seed))
 
 (deftest cats-api
+  (is (satisfies? MuseAST (m/fmap count (value (range 10)))))
   (is (satisfies? MuseAST
                   (m/with-monad ast-monad
                     (m/fmap count (List. 10)))))
@@ -26,7 +27,8 @@
 
 (deftest runner-macros
   (is (= 5 (<!! (run! (m/fmap count (List. 5))))))
-  (is (= 10 (run!! (m/fmap count (List. 10))))))
+  (is (= 10 (run!! (m/fmap count (List. 10)))))
+  (is (= 15 (run!! (m/bind (Single. 10) (fn [num] (Single. (+ 5 num))))))))
 
 (deftest cats-syntax
   (is (= 30 (run!! (m/mlet [x (List. 5)
