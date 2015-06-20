@@ -197,7 +197,7 @@ HTTP calls:
 (run!! (fmap compare (gist "21e7fe149bc5ae0bd878") (gist "b5887f66e2985a21a466")))
 ```
 
-SQL databases:
+SQL databases (see more detailed example here: ["Solving the N+1 Selects Problem with Muse"](https://github.com/kachayev/muse/blob/master/docs/sql.md)):
 
 ```clojure
 (require '[clojure.string :as s])
@@ -205,17 +205,21 @@ SQL databases:
 (require '[muse.core :refer :all])
 (require '[postgres.async :refer :all])
 
-(defrecord Post [limit]
+(def posts-sql "select id, user, title, text from posts limit $1")
+(def user-sql "select id, name from users where id = $1")
+
+(defrecord Posts [limit]
   DataSource
   (fetch [_]
-    (async/map :rows [(execute! db ["select id, user, title, text from posts limit $1" limit])]))
+    (async/map :rows [(execute! db [posts-sql limit])]))
+
   LabeledSource
   (resource-id [_] limit))
 
 (defrecord User [id]
   DataSource
   (fetch [_]
-    (async/map :rows [(execute! db ["select id, name from users where id = $1" id])]))
+    (async/map :rows [(execute! db [user-sql id])]))
 
   BatchedSource
   (fetch-multi [_ users]
