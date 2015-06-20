@@ -6,6 +6,7 @@
 
 (declare fmap)
 (declare flat-map)
+(declare value)
 
 (def ast-monad
   (reify
@@ -13,7 +14,7 @@
     (fmap [_ f mv] (fmap f mv))
 
     proto/Monad
-    (mreturn [_ v] v)
+    (mreturn [_ v] (value v))
     (mbind [_ mv f] (flat-map f mv))))
 
 (defprotocol DataSource
@@ -189,8 +190,21 @@
                            fetch-results (<! (async/map vector (map fetch all-res)))]
                        (into {} (map vector ids fetch-results))))))))]))
 
-;; xxx: catch & propagate exceptions
-(defn run!
+(defn interpret-ast
+  [ast]
+  (go
+   (loop [ast-node ast cache {}]
+     (let [fetches (next-level ast-node)]
+       (if (not (seq fetches))
+         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
+         (let [by-type (group-by resource-name fetches)
+               ;; xxx: catch & propagate exceptions
+               fetch-groups (<! (async/map vector (map fetch-group by-type)))
+               to-cache (into {} fetch-groups)
+               next-cache (into cache to-cache)]
+           (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
+
+(defmacro run!
   "Asynchronously executes the body, returning immediately to the
   calling thread. Rebuild body AST in order to:
   * fetch data sources async (when possible)
@@ -199,19 +213,10 @@
   Returns a channel which will receive the result of
   the body when completed."
   [ast]
-  (go
-   (loop [ast-node ast cache {}]
-     (let [fetches (next-level ast-node)]
-       (if (not (seq fetches))
-         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
-         (let [by-type (group-by resource-name fetches)
-               fetch-groups (<! (async/map vector (map fetch-group by-type)))
-               to-cache (into {} fetch-groups)
-               next-cache (into cache to-cache)]
-           (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
+  `(m/with-monad ast-monad (interpret-ast ~ast)))
 
-(defn run!!
-  "takes a val from the channel return by (run! ast).
+(defmacro run!!
+  "takes a val from the channel returned by (run! ast).
   Will block if nothing is available."
   [ast]
-  (<!! (run! ast)))
+  `(<!! (run! ~ast)))

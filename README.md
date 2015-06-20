@@ -111,7 +111,7 @@ Find more examples in `test` directory and check `muse-examples` repo.
 `MuseAST` monad is compatible with `cats` library, so you can use `mlet/mreturn` interface as well as `fmap` & `bind` functions provided by `cats.core`:
 
 ```clojure
-user=> (require '[muse.core :refer :all] :reload)
+user=> (require '[muse.core :refer :all])
 nil
 user=> (require '[clojure.core.async :refer [go <!!]])
 nil
@@ -123,16 +123,10 @@ user=> (Num. 10)
 #user.Num{:id 10}
 user=> (run!! (Num. 10))
 10
-user=> (run!! (fmap inc (Num. 10))) ;; "own fmap"
-11
-user=> (run!! (flat-map #(Num. (+ 20 %)) (Num. 10))) ;; own "flat-map"
+user=> (run!! (m/mlet [x (Num. 10)
+  #_=>                 y (Num. 20)]
+  #_=>           (m/return (+ x y))))
 30
-user=> (m/fmap inc (fmap inc (Num. 10))) ;; cats "fmap"
-#<MuseMap (clojure.core$comp$fn__4192@20fa0af4 user.Num[10])>
-user=> (run!! (m/fmap inc (fmap inc (Num. 10)))) ;; cats "fmap"
-12
-user=> (run!! (m/fmap inc (value (Num. 10)))) ;; cats "fmap", note "value" modifier to build AST from a single value
-11
 ```
 
 ## Real-World Data Sources
