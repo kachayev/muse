@@ -148,7 +148,7 @@ Nested data fetches (you can see 2 levels of execution):
        (fmap first)
        (flat-map #(ActivityScore. %))))
 
-core> (run!! (rand-friend-activity))
+core> (run!! (random-friend-activity))
 --> 10 .. 576.5833162596521
 <-- 10
 --> 0 .. 275.28637368204966
@@ -244,7 +244,7 @@ core> (run!! (<$> inc (<$> count (FriendsOf. 3))))
 4
 ```
 
-Custom labeling:
+Custom response cache id:
 
 ```clojure
 (defrecord Timeline [username]
