@@ -247,16 +247,24 @@ core> (run!! (<$> inc (<$> count (FriendsOf. 3))))
 Custom labeling:
 
 ```clojure
-user=> (defrecord User [username]
-  #_=>   DataSource
-  #_=>   (fetch [_] (go (str "My name is " username)))
-  #_=>   LabeledSource
-  #_=>   (resource-id [_] username))
-user.User
-user=> (fmap #(str "What I've got: " %) (User. "Alexey"))
-#<MuseMap (user$eval10562$fn__10563@184f2656 user.User[Alexey])>
-user=> (run!! (fmap #(str "What I've got is: " %) (User. "Alexey")))
-"What I've got is: My name is Alexey"
+(defrecord Timeline [username]
+  DataSource
+  (fetch [_] (remote-req username (str username "'s timeline")))
+
+  LabeledSource
+  (resource-id [_] username))
+
+core> (fmap count (Timeline. "@kachayev"))
+#<MuseMap (clojure.core$count@1b932280 core.Timeline[@kachayev])>
+euroclojure.core> (run!! (fmap count (Timeline. "@kachayev")))
+--> @kachayev .. 326.7199583652264
+<-- @kachayev
+20
+core> (run!! (fmap str (Timeline. "@kachayev") (Timeline. "@kachayev")))
+--> @kachayev .. 809.035607308747
+<-- @kachayev
+"@kachayev's timeline@kachayev's timeline"
+
 ```
 
 Find more examples in `test` directory and check `muse-examples` repo.
@@ -266,22 +274,23 @@ Find more examples in `test` directory and check `muse-examples` repo.
 `MuseAST` monad is compatible with `cats` library, so you can use `mlet/mreturn` interface as well as `fmap` & `bind` functions provided by `cats.core`:
 
 ```clojure
-user=> (require '[muse.core :refer :all])
-nil
-user=> (require '[clojure.core.async :refer [go <!!]])
-nil
-user=> (require '[cats.core :as m])
-nil
-user=> (defrecord Num [id] DataSource (fetch [_] (go id)))
-user.Num
-user=> (Num. 10)
-#user.Num{:id 10}
-user=> (run!! (Num. 10))
-10
-user=> (run!! (m/mlet [x (Num. 10)
-  #_=>                 y (Num. 20)]
-  #_=>           (m/return (+ x y))))
-30
+(require '[muse.core :refer :all])
+(require '[clojure.core.async :refer [go <!!]])
+(require '[cats.core :as m])
+
+(defn num-common-friends [x y]
+  (run! (m/mlet [[fx fy] (collect [(FriendsOf. x)
+                                   (FriendsOf. y)])]
+          (m/return (count (intersection fx fy))))))
+
+core> (<!! (num-common-friends 4 5))
+--> (4 5) .. 310.80584065282613
+<-- (4 5)
+4
+core> (<!! (num-common-friends 5 5))
+--> (5 5) .. 594.7472433882408
+<-- (5 5)
+5
 ```
 
 ## Real-World Data Sources
