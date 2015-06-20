@@ -46,7 +46,7 @@ Mapping over list will also run concurrently:
              (fmap (partial apply concat)))))
 ```
 
-You can also use monad interface with `cats` library (still experimental):
+You can also use monad interface with `cats` library:
 
 ```clojure
 (defn num-common-friends
@@ -63,7 +63,7 @@ You can also use monad interface with `cats` library (still experimental):
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.3.1"]
+[muse "0.3.2"]
 ```
 
 All functions are located in `muse.core`:
@@ -252,8 +252,9 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 ## TODO & Ideas
 
 - [ ] catch & propagate exceptions
-- [ ] composibility with `core.algo` and `cats` libraries
 - [ ] clean up code, test coverage, better high-level API
+- [ ] article about N+1 selects problem
+- [ ] article about `FriendsOf` tracking with random timeouts
 
 ## Known Restrictions
 
@@ -268,7 +269,7 @@ Release under the MIT license. See LICENSE for the full license.
 ## Contribute
 
 * Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.
-* Fork the repository on Github to start making your changes to the master branch (or branch off of it).
+* Fork the repository on Github & fork master to `feature-*` branch to start making your changes.
 * Write a test which shows that the bug was fixed or that the feature works as expected.
 
 or simply...
