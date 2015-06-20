@@ -16,11 +16,20 @@
   LabeledSource
   (resource-id [_] seed))
 
+(deftest cats-api
+  (is (satisfies? MuseAST
+                  (m/with-monad ast-monad
+                    (m/fmap count (List. 10)))))
+  (is (satisfies? MuseAST
+                  (m/with-monad ast-monad
+                    (m/bind (Single. 10) (fn [num] (Single. (inc num))))))))
+
 (deftest runner-macros
   (is (= 5 (<!! (run! (m/fmap count (List. 5))))))
   (is (= 10 (run!! (m/fmap count (List. 10))))))
 
 (deftest cats-syntax
-  (is (= 15 (run!! (m/mlet [x (List. 10)
-                            y (List. 5)]
-                           (m/return (+ (count x) (count y))))))))
+  (is (= 30 (run!! (m/mlet [x (List. 5)
+                            y (List. 10)
+                            z (Single. 15)]
+                           (m/return (+ (count x) (count y) z)))))))
