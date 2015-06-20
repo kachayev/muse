@@ -284,12 +284,14 @@ Find more examples in `test` directory and check `muse-examples` repo.
           (m/return (count (intersection fx fy))))))
 
 core> (<!! (num-common-friends 4 5))
---> (4 5) .. 310.80584065282613
-<-- (4 5)
+--> 4 .. 353.12934354517233
+--> 5 .. 484.88529856461247
+<-- 4
+<-- 5
 4
 core> (<!! (num-common-friends 5 5))
---> (5 5) .. 594.7472433882408
-<-- (5 5)
+--> 5 .. 494.8898242477062
+<-- 5
 5
 ```
 
