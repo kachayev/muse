@@ -175,7 +175,9 @@
   [ast-node]
   (if (satisfies? DataSource ast-node)
     (list ast-node)
-    (if-let [values (childs ast-node)] (mapcat next-level values) '())))
+    (if-let [values (childs ast-node)]
+      (mapcat next-level values)
+      '())))
 
 (defn fetch-group
   [[rname [head & tail]]]
@@ -184,7 +186,10 @@
          (let [res (<! (fetch head))] {(cache-id head) res})
          (if (satisfies? BatchedSource head)
            (<! (fetch-multi head tail))
-           (let [all-res (map (fn [[k v]] (first v)) (group-by cache-id (cons head tail)))]
+           (let [all-res (->> tail
+                              (cons head)
+                              (group-by cache-id)
+                              (map (fn [[_ v]] (first v))))]
              ;; xxx: refactor
              (<! (go (let [ids (map cache-id all-res)
                            fetch-results (<! (async/map vector (map fetch all-res)))]
