@@ -20,16 +20,28 @@
 (defprotocol DataSource
   (fetch [this]))
 
-;; xxx: it should be possible to specify source name
 (defprotocol LabeledSource
+  "The id of DataSource instance, used in cache, tracing and stat.
+   If not specified library will use (:id data-source) as an identifier.
+   In order to redefine resource-name you should return seq of 2 elements:
+   '(name id) as a result of resource-id call"
   (resource-id [this]))
 
 (defprotocol BatchedSource
   (fetch-multi [this resources]))
 
-;; xxx: what to do with "reify"?
-(defn resource-name [v]
-  (.getName (.getClass v)))
+(defn- pair-name-id? [id]
+  (and (sequential? id) (= 2 (count id))))
+
+(defn- labeled-resource-name [v]
+  (when (satisfies? LabeledSource v)
+    (let [id (resource-id v)]
+      (when (pair-name-id? id)
+        (first id)))))
+
+(defn- resource-name [v]
+  (or (labeled-resource-name v)
+      (.getName (.getClass v))))
 
 (defprotocol MuseAST
   (childs [this])
@@ -54,7 +66,8 @@
 (defn cache-id
   [res]
   (if (satisfies? LabeledSource res)
-    (resource-id res)
+    (let [id (resource-id res)]
+      (if (pair-name-id? id) (second id) id))
     (:id res)))
 
 (defn cache-path
