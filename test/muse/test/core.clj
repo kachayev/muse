@@ -54,23 +54,42 @@
   LabeledSource
   (resource-id [_] seed))
 
+(defrecord TrackableName [tracker seed]
+  DataSource
+  (fetch [_] (go (swap! tracker inc) seed))
+  LabeledSource
+  (resource-id [_] [:name seed]))
+
 (defrecord TrackableId [tracker id]
   DataSource
   (fetch [_] (go (swap! tracker inc) id)))
 
-(deftest caching
-  ;; w explicit source labeling
+;; w explicit source labeling
+(deftest caching-explicit-labels
   (let [t (atom 0)]
     (is (= 40 (run!! (fmap + (Trackable. t 10) (Trackable. t 10) (Trackable. t 20)))))
     (is (= 2 @t)))
-  ;; w/o explicit source labeling
+  (let [t1 (atom 0)]
+    (is (= 400 (run!! (fmap + (TrackableName. t1 100) (TrackableName. t1 100) (TrackableName. t1 200)))))
+    (is (= 2 @t1))))
+
+;; w/o explicit source labeling
+(deftest caching-implicit-labels
   (let [t2 (atom 0)]
     (is (= 100 (run!! (fmap * (TrackableId. t2 10) (TrackableId. t2 10)))))
-    (is (= 1 @t2)))
-  ;; different tree branches/levels
+    (is (= 1 @t2))))
+
+;; different tree branches/levels
+(deftest caching-multiple-trees
   (let [t3 (atom 0)]
     (is (= 140 (run!! (fmap +
                             (Trackable. t3 50)
                             (fmap (fn [[a b]] (+ a b))
                                   (collect [(Trackable. t3 40) (Trackable. t3 50)]))))))
-    (is (= 2 @t3))))
+    (is (= 2 @t3)))
+  (let [t4 (atom 0)]
+    (is (= 1400 (run!! (fmap +
+                             (TrackableName. t4 500)
+                             (fmap (fn [[a b]] (+ a b))
+                                   (collect [(TrackableName. t4 400) (TrackableName. t4 500)]))))))
+    (is (= 2 @t4))))
