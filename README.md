@@ -49,11 +49,11 @@ Mapping over list will also run concurrently:
 You can also use monad interface with `cats` library:
 
 ```clojure
-(defn num-common-friends
-  [x y]
-  (run! (m/mlet [fx (friends-of x)
-                 fy (friends-of y)]
-          (m/return (count (set/intersection fx fy))))))
+(defn get-post
+  [id]
+  (run! (m/mlet [post (fetch-post id)
+                 author (fetch-user (:author-id post))]
+          (m/return (assoc post :author author)))))
 ```
 
 ## Usage
@@ -271,28 +271,32 @@ Find more examples in `test` directory and check `muse-examples` repo.
 
 ## Cats
 
-`MuseAST` monad is compatible with `cats` library, so you can use `mlet/mreturn` interface as well as `fmap` & `bind` functions provided by `cats.core`:
+`MuseAST` monad is compatible with `cats` library, so you can use `mlet/return` interface as well as `fmap` & `bind` functions provided by `cats.core`:
 
 ```clojure
 (require '[muse.core :refer :all])
 (require '[clojure.core.async :refer [go <!!]])
 (require '[cats.core :as m])
 
-(defn num-common-friends [x y]
-  (run! (m/mlet [[fx fy] (collect [(FriendsOf. x)
-                                   (FriendsOf. y)])]
-          (m/return (count (intersection fx fy))))))
+(defrecord Post [id]
+  DataSource
+  (fetch [_] (remote-req id {:id id :author-id (inc id) :title "Muse"})))
 
-core> (<!! (num-common-friends 4 5))
---> 4 .. 353.12934354517233
---> 5 .. 484.88529856461247
-<-- 4
-<-- 5
-4
-core> (<!! (num-common-friends 5 5))
---> 5 .. 494.8898242477062
-<-- 5
-5
+(defrecord User [id]
+  DataSource
+  (fetch [_] (remote-req id {:id id :name "Alexey"})))
+
+(defn get-post [id]
+  (run! (m/mlet [post (Post. id)
+                 user (User. (:author-id post))]
+                (m/return (assoc post :author user)))))
+
+core> (<!! (get-post 10))
+--> 10 .. 254.02115766996968
+<-- 10
+--> 11 .. 80.1692964764319
+<-- 11
+{:author {:id 11, :name "Alexey"}, :id 10, :author-id 11, :title "Muse"}
 ```
 
 ## Real-World Data Sources
