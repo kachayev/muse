@@ -43,7 +43,7 @@ Mapping over list will also run concurrently:
   (run! (->> id
              friends-of
              (traverse friends-of)
-             (fmap (partial apply concat)))))
+             (fmap (partial apply set/union)))))
 ```
 
 You can also use monad interface with `cats` library:
@@ -191,8 +191,7 @@ core> (run!! (num-common-friends 5 5))
 (defn frieds-of-friends [id]
   (->> (FriendsOf. id)
        (traverse #(FriendsOf. %))
-       (fmap (partial apply concat))
-       (fmap set)))
+       (fmap (partial apply set/union))))
 
 core> (run!! (frieds-of-friends 5))
 --> 5 .. 942.2654519658018
