@@ -103,7 +103,7 @@ Run simplest scenario:
 ```clojure
 core> (FriendsOf. 10)
 #core.FriendsOf{:id 10}
-core> (run! (FriendsOf. 10)) ;; returns channel
+core> (run! (FriendsOf. 10)) ;; returns a channel
 #<ManyToManyChannel clojure.core.async.impl.channels.ManyToManyChannel@1aeaa839>
 core> (<!! (run! (FriendsOf. 10)))
 --> 10 .. 342.97080768100585
@@ -132,7 +132,7 @@ core> (run!! (fmap inc (fmap count (FriendsOf. 3))))
 4
 ```
 
-Let's imaging we have another data source: activit score for user by given user id.
+Let's imaging we have another data source: users' activity score by given user id.
 
 ```clojure
 (defrecord ActivityScore [id]
