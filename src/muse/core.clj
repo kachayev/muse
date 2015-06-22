@@ -18,6 +18,15 @@
     (mbind [_ mv f] (flat-map f mv))))
 
 (defprotocol DataSource
+  "Defines fetch method for the concrete data source. Relies on core.async
+   channel as a result value for fetch call (to return immediately to the
+   calling thread and perform fetch asynchronously). If defrecord is used
+   to define data source, name of record class will be used to batch fetches
+   from the same round of execution as well as to cache previous results
+   and sent fetch requests. Use LabeledSource protocol when using reify to
+   build data source instance.
+
+   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
   (fetch [this]))
 
 (defprotocol LabeledSource
@@ -28,6 +37,11 @@
   (resource-id [this]))
 
 (defprotocol BatchedSource
+  "Group few data fetches into a single request to remote source (i.e.
+   Redis MGET or SQL SELECT .. IN ..). Return channel and write to it
+   map from ID to generic fetch response (as it was made without batching).
+
+   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
   (fetch-multi [this resources]))
 
 (defn- pair-name-id? [id]
