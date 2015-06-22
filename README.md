@@ -143,12 +143,13 @@ Let's imaging we have another data source: users' activity score by given user i
 Nested data fetches (you can see 2 levels of execution):
 
 ```clojure
-(defn random-friend-activity []
+(defn first-friend-activity []
   (->> (FriendsOf. 10)
+       (fmap sort)
        (fmap first)
        (flat-map #(ActivityScore. %))))
 
-core> (run!! (random-friend-activity))
+core> (run!! (first-friend-activity))
 --> 10 .. 576.5833162596521
 <-- 10
 --> 0 .. 275.28637368204966
@@ -188,12 +189,12 @@ core> (run!! (num-common-friends 5 5))
 3) seq operations will also run concurrently:
 
 ```clojure
-(defn frieds-of-friends [id]
+(defn friends-of-friends [id]
   (->> (FriendsOf. id)
        (traverse #(FriendsOf. %))
        (fmap (partial apply set/union))))
 
-core> (run!! (frieds-of-friends 5))
+core> (run!! (friends-of-friends 5))
 --> 5 .. 942.2654519658018
 <-- 5
 --> 0 .. 429.0184498546441
@@ -248,7 +249,7 @@ Custom response cache id:
 ```clojure
 (defrecord Timeline [username]
   DataSource
-  (fetch [_] (remote-req username (str username "'s timeline")))
+  (fetch [_] (remote-req username (str username "'s timeline ")))
 
   LabeledSource
   (resource-id [_] username))
@@ -262,7 +263,7 @@ euroclojure.core> (run!! (fmap count (Timeline. "@kachayev")))
 core> (run!! (fmap str (Timeline. "@kachayev") (Timeline. "@kachayev")))
 --> @kachayev .. 809.035607308747
 <-- @kachayev
-"@kachayev's timeline@kachayev's timeline"
+"@kachayev's timeline @kachayev's timeline "
 
 ```
 
@@ -385,8 +386,7 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 - [ ] catch & propagate exceptions
 - [ ] clean up code, test coverage, better high-level API
-- [ ] article about N+1 selects problem
-- [ ] article about `FriendsOf` tracking with random timeouts
+- [ ] applicative functors interface
 
 ## Known Restrictions
 
