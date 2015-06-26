@@ -17,6 +17,10 @@ Heavily inspired by:
 * [Haxl](https://github.com/facebook/Haxl) - Haskell library, Facebook, open-sourced
 * [Stitch](https://www.youtube.com/watch?v=VVpmMfT8aYw) - Scala library, Twitter, not open-sourced
 
+Talks:
+
+* [Efficient, Concurrent and Concise Data Access](https://goo.gl/h4Zuvr) at EuroClojure 2015
+
 ## The Idea
 
 A core problem of many systems is balancing expressiveness against performance.
