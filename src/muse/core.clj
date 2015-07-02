@@ -192,7 +192,9 @@
 
 (defn collect
   [muses]
-  (apply (partial fmap vector) muses))
+  (if (seq muses)
+    (apply (partial fmap vector) muses)
+    (value [])))
 
 (defn traverse
   [f muses]

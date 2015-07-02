@@ -36,7 +36,9 @@
 
 (deftest higher-level-api
   (is (= [0 1] (run!! (collect [(Single. 0) (Single. 1)]))))
-  (is (= [[0 0] [1 1]] (run!! (traverse mk-pair (List. 2))))))
+  (is (= [] (run!! (collect []))))
+  (is (= [[0 0] [1 1]] (run!! (traverse mk-pair (List. 2)))))
+  (is (= [] (run!! (traverse mk-pair (List. 0))))))
 
 (defn recur-next [seed]
   (if (= 5 seed)
