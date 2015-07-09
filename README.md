@@ -21,7 +21,7 @@ Heavily inspired by:
 
 Talks:
 
-* [Efficient, Concurrent and Concise Data Access](https://goo.gl/h4Zuvr) at EuroClojure 2015
+* "Reinventing Haxl: Efficient, Concurrent and Concise Data Access" at EuroClojure 2015: [Video](https://goo.gl/masrsz), [Slides](https://goo.gl/h4Zuvr)
 
 ## The Idea
 
