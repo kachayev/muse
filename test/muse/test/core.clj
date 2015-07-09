@@ -95,3 +95,20 @@
                              (fmap (fn [[a b]] (+ a b))
                                    (collect [(TrackableName. t4 400) (TrackableName. t4 500)]))))))
     (is (= 2 @t4))))
+
+
+;; resouce should be identifiable: both Name and ID
+
+#_(defrecord Country [iso-id]
+    DataSource
+    (fetch [_] (go {:regions [{:code 1} {:code 2} {:code 3}]})))
+
+#_(defrecord Region [country-iso-id url-id]
+    DataSource
+    (fetch [_] (go (inc url-id))))
+
+#_(deftest disabled-caching
+    (is (nil? (try (run!! (->> (Country. "es")
+                               (fmap :regions)
+                               (traverse #(Region. "es" (:code %)))))
+                   (catch Exception e e)))))

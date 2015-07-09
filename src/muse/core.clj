@@ -54,8 +54,13 @@
         (first id)))))
 
 (defn- resource-name [v]
-  (or (labeled-resource-name v)
-      (.getName (.getClass v))))
+  (let [name (or (labeled-resource-name v)
+                 (.getName (.getClass v)))]
+    (assert (not (nil? name))
+            (str "Resource name is not identifiable: " v
+                 " Please, use record definition (for automatic resolve)"
+                 " or LabeledSource protocol (to specify it manually)"))
+    name))
 
 (defprotocol MuseAST
   (childs [this])
@@ -77,12 +82,20 @@
   (done? [_] true)
   (inject [this _] this))
 
+(defn labeled-cache-id
+  [res]
+  (let [id (resource-id res)]
+    (if (pair-name-id? id) (second id) id)))
+
 (defn cache-id
   [res]
-  (if (satisfies? LabeledSource res)
-    (let [id (resource-id res)]
-      (if (pair-name-id? id) (second id) id))
-    (:id res)))
+  (let [id (if (satisfies? LabeledSource res)
+             (labeled-cache-id res)
+             (:id res))]
+    (assert (not (nil? id))
+            (str "Resource is not identifiable: " res
+                 " Please, use LabeledSource protocol or record with :id key"))
+    id))
 
 (defn cache-path
   [res]
@@ -210,19 +223,20 @@
 
 (defn fetch-group
   [[rname [head & tail]]]
-  (go [rname
-       (if (not (seq tail))
-         (let [res (<! (fetch head))] {(cache-id head) res})
-         (if (satisfies? BatchedSource head)
-           (<! (fetch-multi head tail))
-           (let [all-res (->> tail
-                              (cons head)
-                              (group-by cache-id)
-                              (map (fn [[_ v]] (first v))))]
-             ;; xxx: refactor
-             (<! (go (let [ids (map cache-id all-res)
-                           fetch-results (<! (async/map vector (map fetch all-res)))]
-                       (into {} (map vector ids fetch-results))))))))]))
+  (go
+   [rname
+    (if (not (seq tail))
+      (let [res (<! (fetch head))] {(cache-id head) res})
+      (if (satisfies? BatchedSource head)
+        (<! (fetch-multi head tail))
+        (let [all-res (->> tail
+                           (cons head)
+                           (group-by cache-id)
+                           (map (fn [[_ v]] (first v))))]
+          ;; xxx: refactor
+          (<! (go (let [ids (map cache-id all-res)
+                        fetch-results (<! (async/map vector (map fetch all-res)))]
+                    (into {} (map vector ids fetch-results))))))))]))
 
 (defn interpret-ast
   [ast]
