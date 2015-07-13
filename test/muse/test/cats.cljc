@@ -1,8 +1,9 @@
 (ns muse.test.cats
   (:use clojure.test)
   (:use muse.core)
-  (:require [clojure.core.async :refer [go <!!]]
-            [cats.core :as m]))
+  (:require [clojure.core.async :refer (go <!!)]
+            [cats.core :as m])
+  (:refer-clojure :exclude (run!)))
 
 (defrecord List [size]
   DataSource
