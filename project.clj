@@ -10,14 +10,14 @@
 
   :cljsbuild {:test-commands {"test" ["node" "output/tests.js"]}
               :builds [{:id "test"
-                        :source-paths ["src"]
+                        :source-paths ["src" "test"]
                         :notify-command ["node" "output/tests.js"]
                         :compiler {:output-to "output/tests.js"
                                    :output-dir "output"
                                    :source-map true
                                    :static-fns true
                                    :cache-analysis false
-                                   :main muse.test.runner
+                                   :main muse.runner
                                    :optimizations :none
                                    :target :nodejs
                                    :pretty-print true}}]}
@@ -27,4 +27,5 @@
                                   [cats "0.4.0"]
                                   [org.clojure/clojurescript "0.0-3308"]]
                    :plugins [[lein-cljsbuild "1.0.6"]]}}
+  
   :signing {:gpg-key "kachayev@gmail.com"})

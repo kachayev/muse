@@ -1,5 +1,5 @@
 (ns muse.core
-  #?(:cljs (:require-macros [muse.core :refer (run! run!!)]
+  #?(:cljs (:require-macros [muse.core :refer (run!)]
                             [cljs.core.async.macros :refer (go)])
      :clj (:require [cats.core :refer (with-monad)]
                     [clojure.core.async :as async :refer (go <! >! <!!)]
@@ -8,7 +8,7 @@
   #?(:cljs (:require [cljs.core.async :as async :refer (<! >!)]
                      [clojure.string :as s]
                      [cats.protocols :as proto]))
-  (:refer-clojure :exclude [run!]))
+  (:refer-clojure :exclude (run!)))
 
 (declare fmap)
 (declare flat-map)
@@ -273,6 +273,7 @@
 #?(:clj
    (defmacro run!!
      "takes a val from the channel returned by (run! ast).
-      Will block if nothing is available."
+      Will block if nothing is available. Not available on
+      ClojureScript."
      [ast]
      `(<!! (run! ~ast))))
