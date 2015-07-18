@@ -277,6 +277,13 @@ core> (run!! (fmap str (Timeline. "@kachayev") (Timeline. "@kachayev")))
 
 Find more examples in `test` directory and check `muse-examples` repo.
 
+## ClojureScript
+
+`Muse` can be used from ClojureScript code with few minor differences:
+
+* `run!!` macro doesn't provided (as we don't have blocking experience)
+* all data sources should implement namespaced version of `LabeledSource` protocol (return pair `[resource-name id]`)
+
 ## Cats
 
 `MuseAST` monad is compatible with `cats` library, so you can use `mlet/return` interface as well as `fmap` & `bind` functions provided by `cats.core`:
