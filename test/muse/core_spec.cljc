@@ -28,11 +28,11 @@
   muse/LabeledSource
   (resource-id [_] #?(:clj seed :cljs [:Pair seed])))
 
-(defn mk-pair [seed] (Pair. seed))
+(defn- mk-pair [seed] (Pair. seed))
 
-(defn sum-pair [[a b]] (+ a b))
+(defn- sum-pair [[a b]] (+ a b))
 
-(defn assert-ast
+(defn- assert-ast
   ([expected ast] (assert-ast expected ast nil))
   ([expected ast callback]
    #?(:clj (is (= expected (muse/run!! ast)))
@@ -57,7 +57,7 @@
   (assert-ast [[0 0] [1 1]] (muse/traverse mk-pair (DList. 2)))
   (assert-ast [] (muse/traverse mk-pair (DList. 0))))
 
-(defn recur-next [seed]
+(defn- recur-next [seed]
   (if (= 5 seed)
     (muse/value seed)
     (flat-map recur-next (Single. (inc seed)))))

@@ -35,15 +35,16 @@
 
 (defn assert-ast [expected ast-factory]
   #?(:clj (is (= expected (muse/run!! (ast-factory))))
-     :cljs (async done (take! (muse/run! (ast-factory)) #(is (= expected %)) (done)))))
+     :cljs (async done (take! (muse/run! (ast-factory)) (fn [r] (is (= expected r)) (done))))))
 
 (deftest runner-macros
   #?(:clj (is (= 5 (<!! (muse/run! (m/fmap count (DList. 5)))))))
   (assert-ast 10 (fn [] (m/fmap count (DList. 10))))
   (assert-ast 15 (fn [] (m/bind (Single. 10) (fn [num] (Single. (+ 5 num)))))))
 
-(deftest cats-syntax
-  (assert-ast 30 (fn [] (m/mlet [x (DList. 5)
-                                 y (DList. 10)
-                                 z (Single. 15)]
-                                (m/return (+ (count x) (count y) z))))))
+#?(:clj
+   (deftest cats-syntax
+     (assert-ast 30 (fn [] (m/mlet [x (DList. 5)
+                                    y (DList. 10)
+                                    z (Single. 15)]
+                                   (m/return (+ (count x) (count y) z)))))))
