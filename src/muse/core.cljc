@@ -60,13 +60,13 @@
         (first id)))))
 
 (defn- resource-name [v]
-  (let [name (or (labeled-resource-name v)
-                 (.getName (.getClass v)))]
-    (assert (not (nil? name))
+  (let [value (or (labeled-resource-name v)
+                  #?(:clj (.getName (.getClass v))))]
+    (assert (not (nil? value))
             (str "Resource name is not identifiable: " v
                  " Please, use record definition (for automatic resolve)"
                  " or LabeledSource protocol (to specify it manually)"))
-    name))
+    value))
 
 (defprotocol MuseAST
   (childs [this])

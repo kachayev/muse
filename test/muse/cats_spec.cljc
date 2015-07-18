@@ -16,13 +16,13 @@
   muse/DataSource
   (fetch [_] (go (range size)))
   muse/LabeledSource
-  (resource-id [_] size))
+  (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
   muse/DataSource
   (fetch [_] (go seed))
   muse/LabeledSource
-  (resource-id [_] seed))
+  (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
 (deftest cats-api
   (is (satisfies? muse/MuseAST (m/fmap count (muse/value (range 10)))))

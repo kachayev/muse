@@ -14,19 +14,19 @@
   muse/DataSource
   (fetch [_] (go (range size)))
   muse/LabeledSource
-  (resource-id [_] size))
+  (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
   muse/DataSource
   (fetch [_] (go seed))
   muse/LabeledSource
-  (resource-id [_] seed))
+  (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
 (defrecord Pair [seed]
   muse/DataSource
   (fetch [_] (go [seed seed]))
   muse/LabeledSource
-  (resource-id [_] seed))
+  (resource-id [_] #?(:clj seed :cljs [:Pair seed])))
 
 (defn mk-pair [seed] (Pair. seed))
 
@@ -71,7 +71,7 @@
   muse/DataSource
   (fetch [_] (go (swap! tracker inc) seed))
   muse/LabeledSource
-  (resource-id [_] seed))
+  (resource-id [_] #?(:clj seed :cljs [:Trackable seed])))
 
 (defrecord TrackableName [tracker seed]
   muse/DataSource
@@ -79,9 +79,11 @@
   muse/LabeledSource
   (resource-id [_] [:name seed]))
 
-(defrecord TrackableId [tracker id]
-  muse/DataSource
-  (fetch [_] (go (swap! tracker inc) id)))
+;; note, that automatic name resolution doesn't work in ClojureScript
+#?(:clj
+   (defrecord TrackableId [tracker id]
+     muse/DataSource
+     (fetch [_] (go (swap! tracker inc) id))))
 
 ;; w explicit source labeling
 #?(:clj
@@ -111,12 +113,6 @@
      (let [t2 (atom 0)]
        (assert-ast 100 (fmap * (TrackableId. t2 10) (TrackableId. t2 10)))
        (is (= 1 @t2)))))
-
-#?(:cljs
-   (deftest caching-implicit-labels
-     (let [t2 (atom 0)]
-       (assert-ast 100 (fmap * (TrackableId. t2 10) (TrackableId. t2 10))
-                   (fn [] (is (= 1 @t2)))))))
 
 ;; different tree branches/levels
 #?(:clj
