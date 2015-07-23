@@ -1,8 +1,14 @@
 (ns muse.core
-  (:require [clojure.string :as s]
-            [clojure.core.async :as async :refer [go <! >! <!! >!!]]
-            [cats.protocols :as proto]
-            [cats.core :as m]))
+  #?(:cljs (:require-macros [muse.core :refer (run!)]
+                            [cljs.core.async.macros :refer (go)])
+     :clj (:require [cats.core :refer (with-monad)]
+                    [clojure.core.async :as async :refer (go <! >! <!!)]
+                    [clojure.string :as s]
+                    [cats.protocols :as proto]))
+  #?(:cljs (:require [cljs.core.async :as async :refer (<! >!)]
+                     [clojure.string :as s]
+                     [cats.protocols :as proto]))
+  (:refer-clojure :exclude (run!)))
 
 (declare fmap)
 (declare flat-map)
@@ -54,13 +60,13 @@
         (first id)))))
 
 (defn- resource-name [v]
-  (let [name (or (labeled-resource-name v)
-                 (.getName (.getClass v)))]
-    (assert (not (nil? name))
+  (let [value (or (labeled-resource-name v)
+                  #?(:clj (.getName (.getClass v))))]
+    (assert (not (nil? value))
             (str "Resource name is not identifiable: " v
                  " Please, use record definition (for automatic resolve)"
                  " or LabeledSource protocol (to specify it manually)"))
-    name))
+    value))
 
 (defprotocol MuseAST
   (childs [this])
@@ -222,9 +228,9 @@
       '())))
 
 (defn fetch-group
-  [[rname [head & tail]]]
+  [[resource-name [head & tail]]]
   (go
-   [rname
+   [resource-name
     (if (not (seq tail))
       (let [res (<! (fetch head))] {(cache-id head) res})
       (if (satisfies? BatchedSource head)
@@ -252,19 +258,22 @@
                next-cache (into cache to-cache)]
            (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
 
-(defmacro run!
-  "Asynchronously executes the body, returning immediately to the
-  calling thread. Rebuild body AST in order to:
-  * fetch data sources async (when possible)
-  * cache result of previously made fetches
-  * batch calls to the same data source (when applicable)
-  Returns a channel which will receive the result of
-  the body when completed."
-  [ast]
-  `(m/with-monad ast-monad (interpret-ast ~ast)))
+#?(:clj
+   (defmacro run!
+     "Asynchronously executes the body, returning immediately to the
+      calling thread. Rebuild body AST in order to:
+      * fetch data sources async (when possible)
+      * cache result of previously made fetches
+      * batch calls to the same data source (when applicable)
+      Returns a channel which will receive the result of
+      the body when completed."
+     [ast]
+     `(with-monad ast-monad (interpret-ast ~ast))))
 
-(defmacro run!!
-  "takes a val from the channel returned by (run! ast).
-  Will block if nothing is available."
-  [ast]
-  `(<!! (run! ~ast)))
+#?(:clj
+   (defmacro run!!
+     "takes a val from the channel returned by (run! ast).
+      Will block if nothing is available. Not available on
+      ClojureScript."
+     [ast]
+     `(<!! (run! ~ast))))
