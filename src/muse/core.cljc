@@ -193,7 +193,7 @@
 
 (defn value
   [v]
-  (if (satisfies? DataSource value)
+  (if (satisfies? DataSource v)
     (MuseValue. v)
     (MuseDone. v)))
 
