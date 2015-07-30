@@ -32,6 +32,8 @@
 
 (defn- sum-pair [[a b]] (+ a b))
 
+(defn- id [v] (muse/value v))
+
 (defn- assert-ast
   ([expected ast] (assert-ast expected ast nil))
   ([expected ast callback]
@@ -48,8 +50,12 @@
   (assert-ast 30 (fmap count (DList. 30)))
   (assert-ast 40 (fmap inc (fmap count (DList. 39))))
   (assert-ast 50 (fmap count (fmap concat (DList. 30) (DList. 20))))
+  (assert-ast 42 (flat-map id (Single. 42)))
+  (assert-ast 42 (flat-map id (muse/value 42)))
   (assert-ast [15 15] (flat-map mk-pair (Single. 15)))
-  (assert-ast 60 (fmap sum-pair (flat-map mk-pair (Single. 30)))))
+  (assert-ast [15 15] (flat-map mk-pair (muse/value 15)))
+  (assert-ast 60 (fmap sum-pair (flat-map mk-pair (Single. 30))))
+  (assert-ast 60 (fmap sum-pair (flat-map mk-pair (muse/value 30)))))
 
 (deftest higher-level-api
   (assert-ast [0 1] (muse/collect [(Single. 0) (Single. 1)]))

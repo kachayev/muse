@@ -131,7 +131,7 @@
 (deftype MuseMap [f values]
   proto/Context
   (get-context [_] ast-monad)
-  
+
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -250,7 +250,10 @@
    (loop [ast-node ast cache {}]
      (let [fetches (next-level ast-node)]
        (if (not (seq fetches))
-         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
+         ;; xxx: should be MuseDone, assert & throw exception otherwise
+         (if (done? ast-node)
+           (:value ast-node)
+           (recur (inject-into {:cache cache} ast-node) cache))
          (let [by-type (group-by resource-name fetches)
                ;; xxx: catch & propagate exceptions
                fetch-groups (<! (async/map vector (map fetch-group by-type)))
