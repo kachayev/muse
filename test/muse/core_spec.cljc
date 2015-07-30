@@ -64,7 +64,8 @@
 
 (deftest recur-with-value
   (assert-ast 10 (muse/value 10))
-  (assert-ast 5 (flat-map recur-next (Single. 0))))
+  (assert-ast 5 (flat-map recur-next (Single. 0)))
+  (assert-ast 5 (flat-map recur-next (muse/value (Single. 0)))))
 
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]

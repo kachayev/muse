@@ -131,7 +131,7 @@
 (deftype MuseMap [f values]
   proto/Context
   (get-context [_] ast-monad)
-  
+
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -189,7 +189,7 @@
 
 (defn value
   [v]
-  (if (satisfies? DataSource value)
+  (if (satisfies? DataSource v)
     (MuseValue. v)
     (MuseDone. v)))
 
