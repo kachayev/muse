@@ -151,10 +151,14 @@
   Object
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
+(defn- ast?
+  [ast]
+  (or (satisfies? MuseAST ast)
+      (satisfies? DataSource ast)))
+
 (defn assert-ast!
   [ast]
-  (assert (or (satisfies? MuseAST ast)
-              (satisfies? DataSource ast))))
+  (assert (ast? ast)))
 
 (deftype MuseFlatMap [f values]
   proto/Contextual
@@ -193,9 +197,9 @@
 
 (defn value
   [v]
-  (if (satisfies? DataSource v)
-    (MuseValue. v)
-    (MuseDone. v)))
+  (assert (not (ast? v))
+          (str "The value is already an AST: " v))
+  (MuseDone. v))
 
 (defn fmap
   [f muse & muses]
