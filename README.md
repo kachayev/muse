@@ -6,7 +6,7 @@
 
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
-Often times your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
+Oftentimes, your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
 
 * batch multiple requests to the same data source
 * request data from multiple data sources concurrently
@@ -33,7 +33,7 @@ A core problem of many systems is balancing expressiveness against performance.
   (count (set/intersection (friends-of x) (friends-of y))))
 ```
 
-Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to be fetched concurrently in a single batch. Furthermore, if `x` and `y` refer to the same person, you don't want redundantly re-fetch their friend list.
+Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to be fetched concurrently in a single batch. Furthermore, if `x` and `y` refer to the same person, you don't want to redundantly re-fetch their friend list.
 
 *Muse* allows your data fetches to be implicitly concurrent:
 
@@ -43,7 +43,7 @@ Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to 
   (run! (fmap count (fmap set/intersection (friends-of x) (friends-of y)))))
 ```
 
-Mapping over list will also run concurrently:
+Mapping over lists will also run concurrently:
 
 ```clojure
 (defn friends-of-friends
@@ -140,7 +140,7 @@ core> (run!! (fmap inc (fmap count (FriendsOf. 3))))
 4
 ```
 
-Let's imaging we have another data source: users' activity score by given user id.
+Let's imagine we have another data source: users' activity score by given user id.
 
 ```clojure
 (defrecord ActivityScore [id]
@@ -165,7 +165,7 @@ core> (run!! (first-friend-activity))
 1
 ```
 
-And now few amaizing facts.
+And now a few amazing facts.
 
 ```clojure
 (require '[clojure.set :refer [intersection]])
@@ -185,7 +185,7 @@ core> (run!! (num-common-friends 3 4))
 3
 ```
 
-2) `muse` detects duplicated requests and cache results to avoid redundant work:
+2) `muse` detects duplicated requests and caches results to avoid redundant work:
 
 ```clojure
 core> (run!! (num-common-friends 5 5))
@@ -243,7 +243,7 @@ core> (run!! (frieds-of-friends 5))
 
 ## Misc
 
-If you came from Haskell you will probably like shortcuts:
+If you come from Haskell you will probably like shortcuts:
 
 ```clojure
 core> (<$> inc (<$> count (FriendsOf. 3)))
@@ -281,7 +281,7 @@ Find more examples in `test` directory and check `muse-examples` repo.
 
 `Muse` can be used from ClojureScript code with few minor differences:
 
-* `run!!` macro doesn't provided (as we don't have blocking experience)
+* `run!!` macro isn't provided (as we don't have blocking experience)
 * all data sources should implement namespaced version of `LabeledSource` protocol (return pair `[resource-name id]`)
 
 ## Cats
@@ -393,9 +393,9 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 * You build an AST of all operations placing data source fetching points as leaves using `muse` low-level building blocks (`value`/`fmap`/`flat-map`) and higher-level API (`collect`/`traverse`/etc). Read more about [free monads](http://goo.gl/1ubHUa) approach.
 
-* `muse` implicitely rebuilds AST to work with tree levels instead of separated leave that gives ability to batch requests and run independent fetches concurrently.
+* `muse` implicitly rebuilds AST to work with tree levels instead of separate leaves that gives ability to batch requests and run independent fetches concurrently.
 
-* `muse/run!` is an interpreter that reduce AST level by level until the whole computation is finished (it returns `core.async` channel that you can read from).
+* `muse/run!` is an interpreter that reduces AST level by level until the whole computation is finished (it returns a `core.async` channel that you can read from).
 
 ## TODO & Ideas
 
@@ -405,7 +405,7 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 ## Known Restrictions
 
-* works with `core.async` library only (if you use other async mechanism, like `future`s you can easialy turn your code to be compatible with `core.async`, i.e. with `async/thread`)
+* works with `core.async` library only (if you use other async mechanism, like `future`s you can easily turn your code to be compatible with `core.async`, i.e. with `async/thread`)
 * assumes your operations with data sources are "side-effects free", so you don't really care about the order of fetches
 * yes, you need enough memory to store the whole data fetched during a single `run!` call (in case it's impossible you should probably look into other ways to solve your problem, i.e. data stream libraries)
 
