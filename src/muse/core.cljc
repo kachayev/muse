@@ -131,7 +131,7 @@
 (deftype MuseMap [f values]
   proto/Context
   (get-context [_] ast-monad)
-  
+
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -147,10 +147,14 @@
   Object
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
+(defn- ast?
+  [ast]
+  (or (satisfies? MuseAST ast)
+      (satisfies? DataSource ast)))
+
 (defn assert-ast!
   [ast]
-  (assert (or (satisfies? MuseAST ast)
-              (satisfies? DataSource ast))))
+  (assert (ast? ast)))
 
 (deftype MuseFlatMap [f values]
   proto/Context
@@ -189,9 +193,9 @@
 
 (defn value
   [v]
-  (if (satisfies? DataSource value)
-    (MuseValue. v)
-    (MuseDone. v)))
+  (assert (not (ast? v))
+          (str "The value is already an AST: " v))
+  (MuseDone. v))
 
 (defn fmap
   [f muse & muses]
