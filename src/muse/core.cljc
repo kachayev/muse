@@ -2,6 +2,7 @@
   #?(:cljs (:require-macros [muse.core :refer (run!)]
                             [cljs.core.async.macros :refer (go)])
      :clj (:require [cats.core :refer (with-monad)]
+                    [manifold.deferred :as d]
                     [clojure.core.async :as async :refer (go <! >! <!!)]
                     [clojure.string :as s]
                     [cats.protocols :as proto]))
@@ -141,7 +142,7 @@
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
       (if (= (count next) (count (filter done? next)))
-        (MuseDone. (apply f (map :value next)))
+        (MuseDone. (d/chain (apply d/zip (map :value next)) #(apply f %)))
         (MuseMap. f next))))
 
   Object
@@ -162,7 +163,7 @@
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
       (if (= (count next) (count (filter done? next)))
-        (let [result (apply f (map :value next))]
+        (let [result @(d/chain (apply d/zip (map :value next)) #(apply f %))]
           ;; xxx: refactor to avoid dummy leaves creation
           (if (satisfies? DataSource result) (MuseMap. identity [result]) result))
         (MuseFlatMap. f next))))
@@ -229,34 +230,34 @@
 
 (defn fetch-group
   [[resource-name [head & tail]]]
-  (go
+  (d/future
    [resource-name
     (if (not (seq tail))
-      (let [res (<! (fetch head))] {(cache-id head) res})
+      (let [res (fetch head)] {(cache-id head) res})
       (if (satisfies? BatchedSource head)
-        (<! (fetch-multi head tail))
+        @(fetch-multi head tail)
         (let [all-res (->> tail
                            (cons head)
                            (group-by cache-id)
                            (map (fn [[_ v]] (first v))))]
           ;; xxx: refactor
-          (<! (go (let [ids (map cache-id all-res)
-                        fetch-results (<! (async/map vector (map fetch all-res)))]
-                    (into {} (map vector ids fetch-results))))))))]))
+          (let [ids (map cache-id all-res)
+                fetch-results (map fetch all-res)]
+            (into {} (map vector ids fetch-results))))))]))
 
 (defn interpret-ast
   [ast]
-  (go
-   (loop [ast-node ast cache {}]
-     (let [fetches (next-level ast-node)]
-       (if (not (seq fetches))
-         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
-         (let [by-type (group-by resource-name fetches)
-               ;; xxx: catch & propagate exceptions
-               fetch-groups (<! (async/map vector (map fetch-group by-type)))
-               to-cache (into {} fetch-groups)
-               next-cache (into cache to-cache)]
-           (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
+  (d/future
+    (loop [ast-node ast cache {}]
+      (let [fetches (next-level ast-node)]
+        (if (not (seq fetches))
+          (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
+          (let [by-type (group-by resource-name fetches)
+                ;; xxx: catch & propagate exceptions
+                fetch-groups (apply d/zip (map fetch-group by-type))
+                to-cache (into {} @fetch-groups)
+                next-cache (into cache to-cache)]
+            (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
 
 #?(:clj
    (defmacro run!
@@ -268,7 +269,7 @@
       Returns a channel which will receive the result of
       the body when completed."
      [ast]
-     `(with-monad ast-monad (interpret-ast ~ast))))
+     `(with-monad ast-monad (d/chain (interpret-ast ~ast) identity))))
 
 #?(:clj
    (defmacro run!!
@@ -276,4 +277,4 @@
       Will block if nothing is available. Not available on
       ClojureScript."
      [ast]
-     `(<!! (run! ~ast))))
+     `(deref (run! ~ast))))

@@ -1,7 +1,7 @@
 (ns muse.core-spec
   #?(:clj
      (:require [clojure.test :refer (deftest is)]
-               [clojure.core.async :refer (go <!!)]
+               [manifold.deferred :as d]
                [muse.core :as muse :refer (fmap flat-map)])
      :cljs
      (:require [cljs.test :refer-macros (deftest is async)]
@@ -12,19 +12,19 @@
 
 (defrecord DList [size]
   muse/DataSource
-  (fetch [_] (go (range size)))
+  (fetch [_] (d/future (range size)))
   muse/LabeledSource
   (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
   muse/DataSource
-  (fetch [_] (go seed))
+  (fetch [_] (d/future seed))
   muse/LabeledSource
   (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
 (defrecord Pair [seed]
   muse/DataSource
-  (fetch [_] (go [seed seed]))
+  (fetch [_] (d/future [seed seed]))
   muse/LabeledSource
   (resource-id [_] #?(:clj seed :cljs [:Pair seed])))
 
@@ -43,7 +43,7 @@
                                  (done)))))))
 
 (deftest datasource-ast
-  #?(:clj (is (= 10 (count (<!! (muse/run! (DList. 10)))))))
+  #?(:clj (is (= 10 (count @(muse/run! (DList. 10))))))
   #?(:clj (is (= 20 (count (muse/run!! (DList. 20))))))
   (assert-ast 30 (fmap count (DList. 30)))
   (assert-ast 40 (fmap inc (fmap count (DList. 39))))
@@ -69,13 +69,13 @@
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
   muse/DataSource
-  (fetch [_] (go (swap! tracker inc) seed))
+  (fetch [_] (d/future (swap! tracker inc) seed))
   muse/LabeledSource
   (resource-id [_] #?(:clj seed :cljs [:Trackable seed])))
 
 (defrecord TrackableName [tracker seed]
   muse/DataSource
-  (fetch [_] (go (swap! tracker inc) seed))
+  (fetch [_] (d/future (swap! tracker inc) seed))
   muse/LabeledSource
   (resource-id [_] [:name seed]))
 
@@ -83,7 +83,7 @@
 #?(:clj
    (defrecord TrackableId [tracker id]
      muse/DataSource
-     (fetch [_] (go (swap! tracker inc) id))))
+     (fetch [_] (d/future (swap! tracker inc) id))))
 
 ;; w explicit source labeling
 #?(:clj
@@ -152,11 +152,11 @@
 
 #_(defrecord Country [iso-id]
     muse/DataSource
-    (fetch [_] (go {:regions [{:code 1} {:code 2} {:code 3}]})))
+    (fetch [_] (d/future {:regions [{:code 1} {:code 2} {:code 3}]})))
 
 #_(defrecord Region [country-iso-id url-id]
     muse/DataSource
-    (fetch [_] (go (inc url-id))))
+    (fetch [_] (d/future (inc url-id))))
 
 #_(deftest disabled-caching
     (is (nil? (try (run!! (->> (Country. "es")

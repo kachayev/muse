@@ -1,7 +1,7 @@
 (ns muse.cats-spec
   #?(:clj
      (:require [clojure.test :refer (deftest is)]
-               [clojure.core.async :refer (go <!!) :as a]
+               [manifold.deferred :as d]
                [muse.core :as muse]
                [cats.core :as m])
      :cljs
@@ -14,13 +14,13 @@
 
 (defrecord DList [size]
   muse/DataSource
-  (fetch [_] (go (range size)))
+  (fetch [_] (d/future (range size)))
   muse/LabeledSource
   (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
   muse/DataSource
-  (fetch [_] (go seed))
+  (fetch [_] (d/future seed))
   muse/LabeledSource
   (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
@@ -38,7 +38,7 @@
      :cljs (async done (take! (muse/run! (ast-factory)) (fn [r] (is (= expected r)) (done))))))
 
 (deftest runner-macros
-  #?(:clj (is (= 5 (<!! (muse/run! (m/fmap count (DList. 5)))))))
+  #?(:clj (is (= 5 @(muse/run! (m/fmap count (DList. 5))))))
   (assert-ast 10 (fn [] (m/fmap count (DList. 10))))
   (assert-ast 15 (fn [] (m/bind (Single. 10) (fn [num] (Single. (+ 5 num)))))))
 
