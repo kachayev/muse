@@ -242,7 +242,7 @@
           ;; xxx: refactor
           (<! (go (let [ids (map cache-id all-res)
                         fetch-results (<! (async/map vector (map fetch all-res)))]
-                    (into {} (map vector ids fetch-results))))))))]))
+                    (zipmap ids fetch-results)))))))]))
 
 (defn interpret-ast
   [ast]
@@ -254,8 +254,7 @@
          (let [by-type (group-by resource-name fetches)
                ;; xxx: catch & propagate exceptions
                fetch-groups (<! (async/map vector (map fetch-group by-type)))
-               to-cache (into {} fetch-groups)
-               next-cache (into cache to-cache)]
+               next-cache (into cache fetch-groups)]
            (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
 
 #?(:clj
