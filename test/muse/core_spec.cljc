@@ -66,6 +66,13 @@
   (assert-ast 10 (muse/value 10))
   (assert-ast 5 (flat-map recur-next (Single. 0))))
 
+(defn- assert-failed? [f]
+  (is (thrown? #?(:clj AssertionError :cljs js/Error) (f))))
+
+(deftest value-from-ast
+  (assert-failed? #(muse/value (Single. 0)))
+  (assert-failed? #(muse/value (fmap inc (muse/value 0)))))
+
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
   muse/DataSource

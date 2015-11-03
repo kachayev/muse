@@ -1,12 +1,13 @@
 (ns muse.core
   #?(:cljs (:require-macros [muse.core :refer (run!)]
                             [cljs.core.async.macros :refer (go)])
-     :clj (:require [cats.core :refer (with-monad)]
-                    [clojure.core.async :as async :refer (go <! >! <!!)]
+     :clj (:require [clojure.core.async :as async :refer (go <! >! <!!)]
                     [clojure.string :as s]
+                    [cats.context :as ctx]
                     [cats.protocols :as proto]))
   #?(:cljs (:require [cljs.core.async :as async :refer (<! >!)]
                      [clojure.string :as s]
+                     [cats.context :as ctx]
                      [cats.protocols :as proto]))
   (:refer-clojure :exclude (run!)))
 
@@ -16,12 +17,15 @@
 
 (def ast-monad
   (reify
+    proto/Context
+    (-get-level [_] ctx/+level-default+)
+
     proto/Functor
-    (fmap [_ f mv] (fmap f mv))
+    (-fmap [_ f mv] (fmap f mv))
 
     proto/Monad
-    (mreturn [_ v] (value v))
-    (mbind [_ mv f] (flat-map f mv))))
+    (-mreturn [_ v] (value v))
+    (-mbind [_ mv f] (flat-map f mv))))
 
 (defprotocol DataSource
   "Defines fetch method for the concrete data source. Relies on core.async
@@ -32,7 +36,7 @@
    and sent fetch requests. Use LabeledSource protocol when using reify to
    build data source instance.
 
-   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
+   See example here: https://github.com/funcool/muse/blob/master/docs/sql.md"
   (fetch [this]))
 
 (defprotocol LabeledSource
@@ -47,7 +51,7 @@
    Redis MGET or SQL SELECT .. IN ..). Return channel and write to it
    map from ID to generic fetch response (as it was made without batching).
 
-   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
+   See example here: https://github.com/funcool/muse/blob/master/docs/sql.md"
   (fetch-multi [this resources]))
 
 (defn- pair-name-id? [id]
@@ -77,8 +81,8 @@
   (compose-ast [this f]))
 
 (defrecord MuseDone [value]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   ComposedAST
   (compose-ast [_ f2] (MuseDone. (f2 value)))
@@ -129,9 +133,9 @@
   (s/join " " (map print-node nodes)))
 
 (deftype MuseMap [f values]
-  proto/Context
-  (get-context [_] ast-monad)
-  
+  proto/Contextual
+  (-get-context [_] ast-monad)
+
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -147,14 +151,18 @@
   Object
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
+(defn- ast?
+  [ast]
+  (or (satisfies? MuseAST ast)
+      (satisfies? DataSource ast)))
+
 (defn assert-ast!
   [ast]
-  (assert (or (satisfies? MuseAST ast)
-              (satisfies? DataSource ast))))
+  (assert (ast? ast)))
 
 (deftype MuseFlatMap [f values]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   MuseAST
   (childs [_] values)
@@ -171,8 +179,8 @@
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
 (deftype MuseValue [value]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   ComposedAST
   (compose-ast [_ f2] (MuseMap. f2 [value]))
@@ -189,9 +197,9 @@
 
 (defn value
   [v]
-  (if (satisfies? DataSource value)
-    (MuseValue. v)
-    (MuseDone. v)))
+  (assert (not (ast? v))
+          (str "The value is already an AST: " v))
+  (MuseDone. v))
 
 (defn fmap
   [f muse & muses]
@@ -268,7 +276,7 @@
       Returns a channel which will receive the result of
       the body when completed."
      [ast]
-     `(with-monad ast-monad (interpret-ast ~ast))))
+     `(ctx/with-context ast-monad (interpret-ast ~ast))))
 
 #?(:clj
    (defmacro run!!

@@ -1,6 +1,6 @@
 ## Muse
 
-[![Build Status](https://travis-ci.org/kachayev/muse.svg?branch=master)](https://travis-ci.org/kachayev/muse)
+[![Build Status](https://travis-ci.org/funcool/muse.svg?branch=master)](https://travis-ci.org/funcool/muse)
 
 [![Clojars Project](http://clojars.org/muse/latest-version.svg)](http://clojars.org/muse)
 
@@ -341,7 +341,7 @@ HTTP calls:
 (run!! (fmap compare (gist "21e7fe149bc5ae0bd878") (gist "b5887f66e2985a21a466")))
 ```
 
-SQL databases (see more detailed example here: ["Solving the N+1 Selects Problem with Muse"](https://github.com/kachayev/muse/blob/master/docs/sql.md)):
+SQL databases (see more detailed example here: ["Solving the N+1 Selects Problem with Muse"](https://github.com/funcool/muse/blob/master/docs/sql.md)):
 
 ```clojure
 (require '[clojure.string :as s])
