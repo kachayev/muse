@@ -1,12 +1,13 @@
 (ns muse.core
   #?(:cljs (:require-macros [muse.core :refer (run!)]
                             [cljs.core.async.macros :refer (go)])
-     :clj (:require [cats.core :refer (with-monad)]
-                    [clojure.core.async :as async :refer (go <! >! <!!)]
+     :clj (:require [clojure.core.async :as async :refer (go <! >! <!!)]
                     [clojure.string :as s]
+                    [cats.context :as ctx]
                     [cats.protocols :as proto]))
   #?(:cljs (:require [cljs.core.async :as async :refer (<! >!)]
                      [clojure.string :as s]
+                     [cats.context :as ctx]
                      [cats.protocols :as proto]))
   (:refer-clojure :exclude (run!)))
 
@@ -16,12 +17,15 @@
 
 (def ast-monad
   (reify
+    proto/Context
+    (-get-level [_] ctx/+level-default+)
+
     proto/Functor
-    (fmap [_ f mv] (fmap f mv))
+    (-fmap [_ f mv] (fmap f mv))
 
     proto/Monad
-    (mreturn [_ v] (value v))
-    (mbind [_ mv f] (flat-map f mv))))
+    (-mreturn [_ v] (value v))
+    (-mbind [_ mv f] (flat-map f mv))))
 
 (defprotocol DataSource
   "Defines fetch method for the concrete data source. Relies on core.async
@@ -77,8 +81,8 @@
   (compose-ast [this f]))
 
 (defrecord MuseDone [value]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   ComposedAST
   (compose-ast [_ f2] (MuseDone. (f2 value)))
@@ -129,9 +133,9 @@
   (s/join " " (map print-node nodes)))
 
 (deftype MuseMap [f values]
-  proto/Context
-  (get-context [_] ast-monad)
-  
+  proto/Contextual
+  (-get-context [_] ast-monad)
+
   ComposedAST
   (compose-ast [_ f2] (MuseMap. (comp f2 f) values))
 
@@ -153,8 +157,8 @@
               (satisfies? DataSource ast))))
 
 (deftype MuseFlatMap [f values]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   MuseAST
   (childs [_] values)
@@ -171,8 +175,8 @@
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
 (deftype MuseValue [value]
-  proto/Context
-  (get-context [_] ast-monad)
+  proto/Contextual
+  (-get-context [_] ast-monad)
 
   ComposedAST
   (compose-ast [_ f2] (MuseMap. f2 [value]))
@@ -268,7 +272,7 @@
       Returns a channel which will receive the result of
       the body when completed."
      [ast]
-     `(with-monad ast-monad (interpret-ast ~ast))))
+     `(ctx/with-context ast-monad (interpret-ast ~ast))))
 
 #?(:clj
    (defmacro run!!
