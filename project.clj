@@ -1,6 +1,6 @@
-(defproject muse "0.4.0"
+(defproject funcool/muse "0.4.0"
   :description "A Clojure library that simplifies access to remote data (db, cache, http services)"
-  :url "https://github.com/kachayev/muse"
+  :url "https://github.com/funcool/muse"
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"
             :distribution :repo}
@@ -24,8 +24,8 @@
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
                                   [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                                  [cats "0.4.0"]
+                                  [funcool/cats "1.1.0-SNAPSHOT"]
+                                  [funcool/promissum "0.3.1"]
+                                  [funcool/promesa "0.5.1"]
                                   [org.clojure/clojurescript "0.0-3308"]]
-                   :plugins [[lein-cljsbuild "1.0.6"]]}}
-  
-  :signing {:gpg-key "kachayev@gmail.com"})
+                   :plugins [[lein-cljsbuild "1.0.6"]]}})

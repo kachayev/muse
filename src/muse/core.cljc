@@ -32,7 +32,7 @@
    and sent fetch requests. Use LabeledSource protocol when using reify to
    build data source instance.
 
-   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
+   See example here: https://github.com/funcool/muse/blob/master/docs/sql.md"
   (fetch [this]))
 
 (defprotocol LabeledSource
@@ -47,7 +47,7 @@
    Redis MGET or SQL SELECT .. IN ..). Return channel and write to it
    map from ID to generic fetch response (as it was made without batching).
 
-   See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
+   See example here: https://github.com/funcool/muse/blob/master/docs/sql.md"
   (fetch-multi [this resources]))
 
 (defn- pair-name-id? [id]
