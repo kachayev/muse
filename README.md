@@ -71,7 +71,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.0"]
+[muse "0.4.1"]
 ```
 
 All functions are located in `muse.core`:
@@ -399,7 +399,9 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 ## TODO & Ideas
 
-- [ ] catch & propagate exceptions
+- [ ] support `manifold` executor for Clojure along sid with `core.async` version
+- [ ] catch & propagate exceptions, provide a simple way to deal with timeouts
+- [ ] debuggability with nice visualization for AST & fetching (attaching special meta variables to each AST node during the execution)
 - [ ] applicative functors interface
 - [ ] clean up code, test coverage, better high-level API
 
