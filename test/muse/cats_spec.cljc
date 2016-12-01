@@ -40,6 +40,7 @@
 (deftest runner-macros
   #?(:clj (is (= 5 (<!! (muse/run! (m/fmap count (DList. 5)))))))
   (assert-ast 10 (fn [] (m/fmap count (DList. 10))))
+  (assert-ast 43 (fn [] (m/fmap inc (muse/value 42))))
   (assert-ast 15 (fn [] (m/bind (Single. 10) (fn [num] (Single. (+ 5 num)))))))
 
 #?(:clj

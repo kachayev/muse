@@ -205,7 +205,6 @@
   [f muse & muses]
   (MuseFlatMap. f (cons muse muses)))
 
-;; xxx: use macro instead for auto-partial function building
 (def <$> fmap)
 (defn >>= [muse f] (flat-map f muse))
 
@@ -230,33 +229,35 @@
 (defn fetch-group
   [[resource-name [head & tail]]]
   (go
-   [resource-name
-    (if (not (seq tail))
-      (let [res (<! (fetch head))] {(cache-id head) res})
-      (if (satisfies? BatchedSource head)
-        (<! (fetch-multi head tail))
-        (let [all-res (->> tail
-                           (cons head)
-                           (group-by cache-id)
-                           (map (fn [[_ v]] (first v))))]
-          ;; xxx: refactor
-          (<! (go (let [ids (map cache-id all-res)
-                        fetch-results (<! (async/map vector (map fetch all-res)))]
-                    (into {} (map vector ids fetch-results))))))))]))
+    [resource-name
+     (if (not (seq tail))
+       (let [res (<! (fetch head))] {(cache-id head) res})
+       (if (satisfies? BatchedSource head)
+         (<! (fetch-multi head tail))
+         (let [all-res (->> tail
+                            (cons head)
+                            (group-by cache-id)
+                            (map (fn [[_ v]] (first v))))]
+           ;; xxx: refactor
+           (<! (go (let [ids (map cache-id all-res)
+                         fetch-results (<! (async/map vector (map fetch all-res)))]
+                     (into {} (map vector ids fetch-results))))))))]))
 
 (defn interpret-ast
   [ast]
   (go
-   (loop [ast-node ast cache {}]
-     (let [fetches (next-level ast-node)]
-       (if (not (seq fetches))
-         (:value ast-node) ;; xxx: should be MuseDone, assert & throw exception otherwise
-         (let [by-type (group-by resource-name fetches)
-               ;; xxx: catch & propagate exceptions
-               fetch-groups (<! (async/map vector (map fetch-group by-type)))
-               to-cache (into {} fetch-groups)
-               next-cache (into cache to-cache)]
-           (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
+    (loop [ast-node ast cache {}]
+      (let [fetches (next-level ast-node)]
+        (if (not (seq fetches))
+          (if (done? ast-node)
+            (:value ast-node)
+            (recur (inject-into {:cache cache} ast-node) cache))
+          (let [by-type (group-by resource-name fetches)
+                ;; xxx: catch & propagate exceptions
+                fetch-groups (<! (async/map vector (map fetch-group by-type)))
+                to-cache (into {} fetch-groups)
+                next-cache (into cache to-cache)]
+            (recur (inject-into {:cache next-cache} ast-node) next-cache)))))))
 
 #?(:clj
    (defmacro run!

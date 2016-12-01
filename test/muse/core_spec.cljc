@@ -66,6 +66,10 @@
   (assert-ast 10 (muse/value 10))
   (assert-ast 5 (flat-map recur-next (Single. 0))))
 
+(deftest ast-with-no-fetches
+  (assert-ast 42 (muse/flat-map muse/value (muse/value 42)))
+  (assert-ast [43 43] (muse/flat-map mk-pair (muse/fmap inc (muse/value 42)))))
+
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
   muse/DataSource
