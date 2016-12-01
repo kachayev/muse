@@ -24,8 +24,8 @@
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
                                   [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                                  [cats "0.4.0"]
+                                  [funcool/cats "1.0.0"]
                                   [org.clojure/clojurescript "0.0-3308"]]
                    :plugins [[lein-cljsbuild "1.0.6"]]}}
-  
+
   :signing {:gpg-key "kachayev@gmail.com"})

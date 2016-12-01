@@ -3,13 +3,15 @@
      (:require [clojure.test :refer (deftest is)]
                [clojure.core.async :refer (go <!!) :as a]
                [muse.core :as muse]
-               [cats.core :as m])
+               [cats.core :as m]
+               [cats.context :refer [with-context]])
      :cljs
      (:require [cljs.test :refer-macros (deftest is async)]
                [cljs.core.async :as a :refer (take!)]
                [muse.core :as muse]
                [cats.core :as m]))
-  #? (:cljs (:require-macros [cljs.core.async.macros :refer (go)]))
+  #? (:cljs (:require-macros [cljs.core.async.macros :refer (go)]
+                             [cats.context :refer (with-context)]))
   (:refer-clojure :exclude (run!)))
 
 (defrecord DList [size]
@@ -27,10 +29,10 @@
 (deftest cats-api
   (is (satisfies? muse/MuseAST (m/fmap count (muse/value (range 10)))))
   (is (satisfies? muse/MuseAST
-                  (m/with-monad muse/ast-monad
+                  (with-context muse/ast-monad
                     (m/fmap count (DList. 10)))))
   (is (satisfies? muse/MuseAST
-                  (m/with-monad muse/ast-monad
+                  (with-context muse/ast-monad
                     (m/bind (Single. 10) (fn [num] (Single. (inc num))))))))
 
 (defn assert-ast [expected ast-factory]
