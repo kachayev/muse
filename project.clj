@@ -27,5 +27,4 @@
                                   [cats "0.4.0"]
                                   [org.clojure/clojurescript "0.0-3308"]]
                    :plugins [[lein-cljsbuild "1.0.6"]]}}
-  
-  :signing {:gpg-key "kachayev@gmail.com"})
+  :repositories [["clojars" {:sign-releases false}]])
