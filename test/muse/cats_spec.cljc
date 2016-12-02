@@ -3,34 +3,36 @@
      (:require [clojure.test :refer (deftest is)]
                [clojure.core.async :refer (go <!!) :as a]
                [muse.core :as muse]
+               [muse.protocol :as proto]
                [cats.core :as m])
      :cljs
      (:require [cljs.test :refer-macros (deftest is async)]
                [cljs.core.async :as a :refer (take!)]
                [muse.core :as muse]
+               [muse.protocol :as proto]
                [cats.core :as m]))
-  #? (:cljs (:require-macros [cljs.core.async.macros :refer (go)]))
+  #?(:cljs (:require-macros [cljs.core.async.macros :refer (go)]))
   (:refer-clojure :exclude (run!)))
 
 (defrecord DList [size]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go (range size)))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go seed))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
 (deftest cats-api
-  (is (satisfies? muse/MuseAST (m/fmap count (muse/value (range 10)))))
-  (is (satisfies? muse/MuseAST
-                  (m/with-monad muse/ast-monad
+  (is (satisfies? proto/MuseAST (m/fmap count (muse/value (range 10)))))
+  (is (satisfies? proto/MuseAST
+                  (m/with-monad proto/ast-monad
                     (m/fmap count (DList. 10)))))
-  (is (satisfies? muse/MuseAST
-                  (m/with-monad muse/ast-monad
+  (is (satisfies? proto/MuseAST
+                  (m/with-monad proto/ast-monad
                     (m/bind (Single. 10) (fn [num] (Single. (inc num))))))))
 
 (defn assert-ast [expected ast-factory]

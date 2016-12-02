@@ -71,7 +71,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.1"]
+[muse "0.4.3-alpha"]
 ```
 
 All functions are located in `muse.core`:
@@ -241,6 +241,31 @@ core> (run!! (frieds-of-friends 5))
 #{0 1 3 2}
 ```
 
+## Manifold
+
+`core.async` is a decent abstraction to work with async code, but it's not flexible enough to all cases. `muse` provides a separate namespace `muse.deferred` that gives you ability to define resources in terms of `manifold.deferred`. Just use import aliasing and you code will look the same. See the following:
+
+```clojure
+(require '[muse.deferred :as muse])
+(require '[manifold.deferred :as d])
+
+(defrecord Numeric [n]
+  muse/DataSource
+  ;; note that fetch returns a deferred value instead of a channel
+  (fetch [_] (d/future (* 2 n)))
+
+  muse/LabeledSource
+  (resource-id [_] n))
+
+(muse/run! (muse/fmap inc (Numeric. 21)))
+# => << 43 >>
+
+(muse/run!! (muse/fmap inc (Numeric. 21)))
+# => 43
+```
+
+Read more about `manifold` library [here](https://github.com/ztellman/manifold). Please note, that muse does not allow to mix different execution strategies in a single AST. In case you mess channels and deferred in your code, you have explitely convert them into a single source of truth before passing them to `muse`.
+
 ## Misc
 
 If you come from Haskell you will probably like shortcuts:
@@ -399,7 +424,6 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 ## TODO & Ideas
 
-- [ ] support `manifold` executor for Clojure along sid with `core.async` version
 - [ ] catch & propagate exceptions, provide a simple way to deal with timeouts
 - [ ] debuggability with nice visualization for AST & fetching (attaching special meta variables to each AST node during the execution)
 - [ ] applicative functors interface
@@ -407,7 +431,6 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 ## Known Restrictions
 
-* works with `core.async` library only (if you use other async mechanism, like `future`s you can easily turn your code to be compatible with `core.async`, i.e. with `async/thread`)
 * assumes your operations with data sources are "side-effects free", so you don't really care about the order of fetches
 * yes, you need enough memory to store the whole data fetched during a single `run!` call (in case it's impossible you should probably look into other ways to solve your problem, i.e. data stream libraries)
 

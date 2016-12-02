@@ -1,11 +1,11 @@
-(defproject muse "0.4.1"
+(defproject muse "0.4.3-alpha"
   :description "A Clojure library that simplifies access to remote data (db, cache, http services)"
   :url "https://github.com/kachayev/muse"
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"
             :distribution :repo}
   :global-vars {*warn-on-reflection* false}
-  :dependencies []
+  :dependencies [[manifold "0.1.6-alpha4"]]
   :test-paths ["test"]
 
   :cljsbuild {:test-commands {"test" ["node" "output/tests.js"]}
@@ -22,9 +22,9 @@
                                    :target :nodejs
                                    :pretty-print true}}]}
 
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.7.0"]
-                                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
+                                  [org.clojure/core.async "0.2.385"]
                                   [cats "0.4.0"]
-                                  [org.clojure/clojurescript "0.0-3308"]]
-                   :plugins [[lein-cljsbuild "1.0.6"]]}}
+                                  [org.clojure/clojurescript "1.9.293"]]
+                   :plugins [[lein-cljsbuild "1.1.4"]]}}
   :repositories [["clojars" {:sign-releases false}]])

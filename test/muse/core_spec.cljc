@@ -6,26 +6,27 @@
      :cljs
      (:require [cljs.test :refer-macros (deftest is async)]
                [cljs.core.async :refer (take!)]
-               [muse.core :as muse :refer (fmap flat-map)]))
+               [muse.core :as muse :refer (fmap flat-map)]
+               [muse.protocol :as proto]))
   #? (:cljs (:require-macros [cljs.core.async.macros :refer (go)]))
   (:refer-clojure :exclude (run!)))
 
 (defrecord DList [size]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go (range size)))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj size :cljs [:DList size])))
 
 (defrecord Single [seed]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go seed))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
 (defrecord Pair [seed]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go [seed seed]))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj seed :cljs [:Pair seed])))
 
 (defn- mk-pair [seed] (Pair. seed))
@@ -72,15 +73,15 @@
 
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go (swap! tracker inc) seed))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj seed :cljs [:Trackable seed])))
 
 (defrecord TrackableName [tracker seed]
-  muse/DataSource
+  #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go (swap! tracker inc) seed))
-  muse/LabeledSource
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] [:name seed]))
 
 ;; note, that automatic name resolution doesn't work in ClojureScript
