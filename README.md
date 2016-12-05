@@ -71,7 +71,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.3-alpha"]
+[muse "0.4.3-alpha2"]
 ```
 
 All functions are located in `muse.core`:
@@ -243,7 +243,7 @@ core> (run!! (frieds-of-friends 5))
 
 ## Manifold
 
-`core.async` is a decent abstraction to work with async code, but it's not flexible enough to all cases. `muse` provides a separate namespace `muse.deferred` that gives you ability to define resources in terms of `manifold.deferred`. Just use import aliasing and you code will look the same. See the following:
+`core.async` is a decent abstraction for working with async code, but it's not flexible enough to cover all the cases. `muse` provides a separate namespace `muse.deferred` that gives you ability to define resources in terms of `manifold.deferred`. Just use import aliasing and you code will look the same. See the following:
 
 ```clojure
 (require '[muse.deferred :as muse])

@@ -71,7 +71,10 @@
 
 (defmacro run!!
   "takes a val from the channel returned by (run! ast).
-   Will block if nothing is available. Not available on
-   ClojureScript."
-  [ast]
-  `(deref (run! ~ast)))
+   Will block if nothing is available. The variant taking
+   a timeout will return timeout-val if the timeout
+   (in milliseconds) is reached before a value is available."
+  ([ast]
+   `(deref (run! ~ast)))
+  ([ast timeout-ms timeout-val]
+   `(deref (d/timeout! (run! ~ast) ~timeout-ms ~timeout-val))))
