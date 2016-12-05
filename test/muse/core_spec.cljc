@@ -72,13 +72,14 @@
   (assert-ast [43 43] (muse/flat-map mk-pair (muse/fmap inc (muse/value 42)))))
 
 #?(:clj
-   (defrecord Slowpoke [id timer]
-     muse/DataSource
-     (fetch [_] (go (<! (timeout timer)) id)))
+   (do
+     (defrecord Slowpoke [id timer]
+       muse/DataSource
+       (fetch [_] (go (<! (timeout timer)) id)))
 
-   (deftest timeout-handling
-     (is ::timeout (muse/run!! (Slowpoke. 1 25) 20 ::timeout))
-     (is 2 (muse/run!! (Slowpoke. 2 25) 30 ::timeout))))
+     (deftest timeout-handling
+       (is ::timeout (muse/run!! (Slowpoke. 1 25) 20 ::timeout))
+       (is 2 (muse/run!! (Slowpoke. 2 25) 30 ::timeout)))))
 
 ;; attention! never do such mutations within "fetch" in real code
 (defrecord Trackable [tracker seed]
