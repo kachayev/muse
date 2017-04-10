@@ -8,6 +8,7 @@
                      [muse.protocol :as proto]))
   (:refer-clojure :exclude (run!)))
 
+(def ast-monad proto/ast-monad)
 (def fmap proto/fmap)
 (def flat-map proto/flat-map)
 (def value proto/value)
