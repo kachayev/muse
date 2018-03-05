@@ -71,7 +71,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.3-alpha2"]
+[muse "0.4.3-alpha3"]
 ```
 
 All functions are located in `muse.core`:
