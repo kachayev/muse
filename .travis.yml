@@ -1,14 +1,14 @@
+dist: trusty
 language: clojure
-lein: lein2
 
 script:
   - ./.travis/test-cljs.sh
   - ./.travis/test-clj.sh
 
 jdk:
-  - openjdk7
-  - oraclejdk7
   - oraclejdk8
+  - openjdk8
+  - openjdk7
 
 matrix:
   fast_finish: true
