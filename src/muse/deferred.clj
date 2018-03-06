@@ -24,24 +24,24 @@
   (d/chain deferred (fn [result] [name result])))
 
 (defn fetch-group
-  [[resource-name [head & tail]]]
+  [[resource-name group]]
   (attach-resource-name
    resource-name
-   (if (not (seq tail))
-     (d/chain
-      (fetch head)
+   (let [[head & tail] group]
+     (if (not (seq tail))
+       (d/chain
+        (fetch head)
         (fn [res] {(proto/cache-id head) res}))
-     (if (satisfies? BatchedSource head)
-       (fetch-multi head tail)
-       (let [all-res (->> tail
-                          (cons head)
-                          (group-by proto/cache-id)
-                          (map (fn [[_ v]] (first v))))]
-         (d/chain
-          (apply d/zip (map fetch all-res))
-          (fn [fetch-results]
-            (let [ids (map proto/cache-id all-res)]
-              (into {} (map vector ids fetch-results))))))))))
+       (if (satisfies? BatchedSource head)
+         (fetch-multi head tail)
+         (let [all-res (->> group
+                            (group-by proto/cache-id)
+                            (map (fn [[_ v]] (first v))))]
+           (d/chain
+            (apply d/zip (map fetch all-res))
+            (fn [fetch-results]
+              (let [ids (map proto/cache-id all-res)]
+                (into {} (map vector ids fetch-results)))))))))))
 
 (defn interpret-ast
   [ast]
