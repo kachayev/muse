@@ -28,6 +28,15 @@
   muse/LabeledSource
   (resource-id [_] seed))
 
+(defrecord SingleWithIncBatch [seed]
+  muse/DataSource
+  (fetch [_] (d/future (inc seed)))
+  muse/BatchedSource
+  (fetch-multi [this others]
+    (->> (cons this others) (map :seed) (map inc) d/future))
+  muse/LabeledSource
+  (resource-id [_] seed))
+
 (defrecord Pair [seed]
   muse/DataSource
   (fetch [_] (d/future [seed seed]))
@@ -60,6 +69,12 @@
                                            (SingleWithBatch. 2)
                                            (SingleWithBatch. 1)
                                            (SingleWithBatch. 3)]))
+  (assert-ast [1 2 4 3 2 4] (muse/collect [(SingleWithIncBatch. 0)
+                                           (SingleWithIncBatch. 1)
+                                           (SingleWithIncBatch. 3)
+                                           (SingleWithIncBatch. 2)
+                                           (SingleWithIncBatch. 1)
+                                           (SingleWithIncBatch. 3)]))
   (assert-ast [] (muse/collect []))
   (assert-ast [[0 0] [1 1]] (muse/traverse mk-pair (DList. 2)))
   (assert-ast [] (muse/traverse mk-pair (DList. 0))))

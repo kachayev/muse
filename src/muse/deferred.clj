@@ -33,7 +33,17 @@
         (fetch head)
         (fn [res] {(proto/cache-id head) res}))
        (if (satisfies? BatchedSource head)
-         (fetch-multi head tail)
+         (d/chain
+          (fetch-multi head tail)
+          (fn [results]
+            (if (map? results)
+              results
+              (if (not= (count group) (count results))
+                (throw (ex-info "Illegal output from BatchedSource fetch-multi"
+                                {:inputs group
+                                 :output-size (count results)
+                                 :expected-size (count group)}))
+                (into {} (map vector (map proto/cache-id group) results))))))
          (let [all-res (->> group
                             (group-by proto/cache-id)
                             (map (fn [[_ v]] (first v))))]
