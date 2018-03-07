@@ -7,7 +7,6 @@
   :global-vars {*warn-on-reflection* true}
   :dependencies [[manifold "0.1.6"]]
   :test-paths ["test"]
-
   :cljsbuild {:test-commands {"test" ["node" "output/tests.js"]}
               :builds [{:id "test"
                         :source-paths ["src" "test"]
@@ -21,8 +20,7 @@
                                    :optimizations :none
                                    :target :nodejs
                                    :pretty-print true}}]}
-
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/core.async "0.4.474"]
                                   [cats "0.4.0"]
                                   [org.clojure/clojurescript "1.9.946"]]
