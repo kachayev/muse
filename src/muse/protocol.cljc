@@ -55,7 +55,7 @@
 
 (defn resource-name [v]
   (let [value (or (labeled-resource-name v)
-                  #?(:clj (.getName (.getClass v))))]
+                  #?(:clj (.getName ^Class (.getClass ^Object v))))]
     (assert (not (nil? value))
             (str "Resource name is not identifiable: " v
                  " Please, use record definition (for automatic resolve)"
