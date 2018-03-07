@@ -55,8 +55,8 @@ Define `User` data source that additionally implemented `muse/BatchedSource` pro
     (async/map :rows [(execute! db [user-sql id])]))
 
   BatchedSource
-  (fetch-multi [_ users]
-    (let [all-ids (cons id (map :id users))
+  (fetch-multi [this others]
+    (let [all-ids (cons id (map :id (cons this others)))
           query (str "select id, name from users where id IN (" (s/join "," all-ids) ")")]
       (go
         (let [{:keys [rows]} (<! (execute! db [query]))]

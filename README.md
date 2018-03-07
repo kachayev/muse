@@ -2,7 +2,11 @@
 
 [![Build Status](https://travis-ci.org/kachayev/muse.svg?branch=master)](https://travis-ci.org/kachayev/muse)
 
-[![Clojars Project](http://clojars.org/muse/latest-version.svg)](http://clojars.org/muse)
+Add to your project:
+
+```clojure
+[muse "0.4.3-alpha4"]
+```
 
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
@@ -71,7 +75,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.3-alpha3"]
+[muse "0.4.3-alpha4"]
 ```
 
 All functions are located in `muse.core`:
@@ -226,8 +230,8 @@ core> (run!! (friends-of-friends 5))
   (fetch [_] (remote-req id (set (range id))))
 
   BatchedSource
-  (fetch-multi [_ users]
-    (let [ids (cons id (map :id users))]
+  (fetch-multi [this others]
+    (let [ids (cons id (map :id (cons this others)))]
       (->> ids
            (map #(vector %1 (set (range %1))))
            (into {})
@@ -241,9 +245,14 @@ core> (run!! (frieds-of-friends 5))
 #{0 1 3 2}
 ```
 
+A few notes on `BatchedSource` protocol as it might be kinda tricky from the first glance:
+
+ - `fetch-multi` excepts first node as a first argument (usually, `this`) and all others as a second argument (usually, `others`)
+ - you have an option to return either map id -> resource (make sure it's the same id you would return from `resource-id`) or a seq of resources preserving the order of identifiers given your as an argument (AST runner would double check that the size of your output is actually equal to the size of input params)
+
 ## Manifold
 
-`core.async` is a decent abstraction for working with async code, but it's not flexible enough to cover all the cases. `muse` provides a separate namespace `muse.deferred` that gives you ability to define resources in terms of `manifold.deferred`. Just use import aliasing and you code will look the same. See the following:
+`core.async` is a decent abstraction for working with async code, but it's not flexible enough to cover all cases. `muse` provides a separate namespace `muse.deferred` that gives you ability to define resources in terms of `manifold.deferred`. Just use import aliasing and you code will look the same. See the following:
 
 ```clojure
 (require '[muse.deferred :as muse])
@@ -391,8 +400,8 @@ SQL databases (see more detailed example here: ["Solving the N+1 Selects Problem
     (async/map :rows [(execute! db [user-sql id])]))
 
   BatchedSource
-  (fetch-multi [_ users]
-    (let [all-ids (cons id (map :id users))
+  (fetch-multi [this others]
+    (let [all-ids (cons id (map :id (cons this others)))
           query (str "select id, name from users where id IN (" (s/join "," all-ids) ")")]
       (go
         (let [{:keys [rows]} (<! (execute! db [query]))]
@@ -424,10 +433,12 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 ## TODO & Ideas
 
+(any support is very welcome)
+
 - [ ] catch & propagate exceptions, provide a simple way to deal with timeouts
 - [ ] debuggability with nice visualization for AST & fetching (attaching special meta variables to each AST node during the execution)
-- [ ] applicative functors interface
-- [ ] clean up code, test coverage, better high-level API
+- [ ] clean up code, tests coverage
+- [ ] build node-relations delarative notation on top of low-level API to describe your data
 
 ## Known Restrictions
 
