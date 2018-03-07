@@ -23,6 +23,14 @@
   #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
   (resource-id [_] #?(:clj seed :cljs [:Single seed])))
 
+(defrecord SingleIncWithBatch [seed]
+  #?(:clj muse/DataSource :cljs proto/DataSource)
+  (fetch [_] (go (inc seed)))
+  #?(:clj muse/BatchedSource :cljs proto/BatchedSource)
+  (fetch-multi [this others] (go (->> (cons this others) (map :seed) (map inc))))
+  #?(:clj muse/LabeledSource :cljs proto/LabeledSource)
+  (resource-id [_] #?(:clj seed :cljs [:Single seed])))
+
 (defrecord Pair [seed]
   #?(:clj muse/DataSource :cljs proto/DataSource)
   (fetch [_] (go [seed seed]))
@@ -54,6 +62,17 @@
 
 (deftest higher-level-api
   (assert-ast [0 1] (muse/collect [(Single. 0) (Single. 1)]))
+  (assert-ast [0 1 2 1 0] (muse/collect [(Single. 0)
+                                         (Single. 1)
+                                         (Single. 2)
+                                         (Single. 1)
+                                         (Single. 0)]))
+  (assert-ast [1 1 1] (muse/collect [(SingleIncWithBatch. 0)
+                                     (SingleIncWithBatch. 0)
+                                     (SingleIncWithBatch. 0)]))
+  (assert-ast [1 2 1] (muse/collect [(SingleIncWithBatch. 0)
+                                     (SingleIncWithBatch. 1)
+                                     (SingleIncWithBatch. 0)]))
   (assert-ast [] (muse/collect []))
   (assert-ast [[0 0] [1 1]] (muse/traverse mk-pair (DList. 2)))
   (assert-ast [] (muse/traverse mk-pair (DList. 0))))
