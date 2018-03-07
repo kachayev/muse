@@ -27,8 +27,11 @@
   [[resource-name group]]
   (attach-resource-name
    resource-name
-   (let [[head & tail] group]
-     (if (not (seq tail))
+   (let [all-res (->> group
+                      (group-by proto/cache-id)
+                      (map (fn [[_ v]] (first v))))
+         [head & tail] all-res]
+     (if (empty? tail)
        (d/chain
         (fetch head)
         (fn [res] {(proto/cache-id head) res}))
@@ -38,20 +41,17 @@
           (fn [results]
             (if (map? results)
               results
-              (if (not= (count group) (count results))
+              (if (not= (count all-res) (count results))
                 (throw (ex-info "Illegal output from BatchedSource fetch-multi"
                                 {:inputs group
                                  :output-size (count results)
-                                 :expected-size (count group)}))
-                (into {} (map vector (map proto/cache-id group) results))))))
-         (let [all-res (->> group
-                            (group-by proto/cache-id)
-                            (map (fn [[_ v]] (first v))))]
-           (d/chain
-            (apply d/zip (map fetch all-res))
-            (fn [fetch-results]
-              (let [ids (map proto/cache-id all-res)]
-                (into {} (map vector ids fetch-results)))))))))))
+                                 :expected-size (count all-res)}))
+                (into {} (map vector (map proto/cache-id all-res) results))))))
+         (d/chain
+          (apply d/zip (map fetch all-res))
+          (fn [fetch-results]
+            (let [ids (map proto/cache-id all-res)]
+              (into {} (map vector ids fetch-results))))))))))
 
 (defn interpret-ast
   [ast]
