@@ -2,13 +2,11 @@
 
 [![Build Status](https://travis-ci.org/kachayev/muse.svg?branch=master)](https://travis-ci.org/kachayev/muse)
 
-Add to your project:
+Add to your project (note weird `muse2` artefact group id as Clojars now denies shadowing of Maven Central artifacts):
 
 ```clojure
 [muse2/muse "0.4.4"]
 ```
-
-Note weird `muse2` artefact group id, due to Clojars [issue](https://github.com/clojars/clojars-web/issues/682). Hope, it's a temporary solution.
 
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
