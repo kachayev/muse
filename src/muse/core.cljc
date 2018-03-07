@@ -27,8 +27,9 @@
   [[resource-name [head & tail]]]
   (go
     [resource-name
-     (if (not (seq tail))
-       (let [res (<! (fetch head))] {(proto/cache-id head) res})
+     (if (empty? tail)
+       (let [res (<! (fetch head))]
+         {(proto/cache-id head) res})
        (if (satisfies? BatchedSource head)
          (<! (fetch-multi head tail))
          (let [all-res (->> tail
@@ -45,7 +46,7 @@
   (go
     (loop [ast-node ast cache {}]
       (let [fetches (proto/next-level ast-node)]
-        (if (not (seq fetches))
+        (if (empty? fetches)
           (if (proto/done? ast-node)
             (:value ast-node)
             (recur (proto/inject-into {:cache cache} ast-node) cache))

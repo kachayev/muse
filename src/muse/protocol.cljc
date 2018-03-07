@@ -189,7 +189,7 @@
 
 (defn fmap
   [f muse & muses]
-  (if (and (not (seq muses))
+  (if (and (empty? muses)
            (satisfies? ComposedAST muse))
     (compose-ast muse f)
     (MuseMap. f (cons muse muses))))
@@ -204,9 +204,9 @@
 
 (defn collect
   [muses]
-  (if (seq muses)
-    (apply (partial fmap vector) muses)
-    (value [])))
+  (if (empty? muses)
+    (value [])
+    (apply (partial fmap vector) muses)))
 
 (defn traverse
   [f muses]
