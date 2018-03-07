@@ -32,7 +32,7 @@
      (if (empty? tail)
        (d/chain
         (fetch head)
-        (fn [res] {(proto/cache-id head) res}))
+        #(-> {(proto/cache-id head) %}))
        (if (satisfies? BatchedSource head)
          (d/chain
           (fetch-multi head tail)

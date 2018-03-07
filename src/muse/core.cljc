@@ -23,26 +23,30 @@
 (def BatchedSource proto/BatchedSource)
 (def fetch-multi proto/fetch-multi)
 
-(defn fetch-group
-  [[resource-name [head & tail]]]
+(defn fetch-group [[resource-name group]]
   (go
     [resource-name
-     (if (empty? tail)
-       (let [res (<! (fetch head))]
-         {(proto/cache-id head) res})
-       (if (satisfies? BatchedSource head)
-         (<! (fetch-multi head tail))
-         (let [all-res (->> tail
-                            (cons head)
-                            (group-by proto/cache-id)
-                            (map (fn [[_ v]] (first v))))]
-           ;; xxx: refactor
-           (<! (go (let [ids (map proto/cache-id all-res)
-                         fetch-results (<! (async/map vector (map fetch all-res)))]
-                     (into {} (map vector ids fetch-results))))))))]))
+     (let [all-res (->> group
+                        (group-by proto/cache-id)
+                        (map (fn [[_ v]] (first v))))
+           ids (map proto/cache-id all-res)
+           [head & tail] all-res]
+       (if (empty? tail)
+         {(proto/cache-id head) (<! (fetch head))}
+         (if (satisfies? BatchedSource head)
+           (let [fetch-results (<! (fetch-multi head tail))]
+             (if (map? fetch-results)
+               fetch-results
+               (if (not= (count ids) (count fetch-results))
+                 (throw (ex-info "Illegal output from BatchedSource fetch-multi"
+                                 {:inputs group
+                                  :output-size (count fetch-results)
+                                  :expected-size (count ids)}))
+                (into {} (map vector ids fetch-results)))))
+           (let [fetch-results (<! (async/map vector (map fetch all-res)))]
+             (into {} (map vector ids fetch-results))))))]))
 
-(defn interpret-ast
-  [ast]
+(defn interpret-ast [ast]
   (go
     (loop [ast-node ast cache {}]
       (let [fetches (proto/next-level ast-node)]
@@ -51,7 +55,6 @@
             (:value ast-node)
             (recur (proto/inject-into {:cache cache} ast-node) cache))
           (let [by-type (group-by proto/resource-name fetches)
-                ;; xxx: catch & propagate exceptions
                 fetch-groups (<! (async/map vector (map fetch-group by-type)))
                 to-cache (into {} fetch-groups)
                 next-cache (into cache to-cache)]
