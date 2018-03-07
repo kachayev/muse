@@ -19,12 +19,10 @@
 (def BatchedSource proto/BatchedSource)
 (def fetch-multi proto/fetch-multi)
 
-(defn- attach-resource-name
-  [name deferred]
-  (d/chain deferred (fn [result] [name result])))
+(defn- attach-resource-name [name d]
+  (d/chain d (fn [result] [name result])))
 
-(defn fetch-group
-  [[resource-name group]]
+(defn fetch-group [[resource-name group]]
   (attach-resource-name
    resource-name
    (let [all-res (->> group
@@ -47,7 +45,7 @@
                                  :output-size (count results)
                                  :expected-size (count all-res)}))
                 (into {} (map vector (map proto/cache-id all-res) results))))))
-         (d/chain
+         (d/chain'
           (apply d/zip (map fetch all-res))
           (fn [fetch-results]
             (let [ids (map proto/cache-id all-res)]
@@ -57,11 +55,11 @@
   [ast]
   (d/loop [ast-node ast cache {}]
     (let [fetches (proto/next-level ast-node)]
-      (if (not (seq fetches))
+      (if (empty? fetches)
         (if (proto/done? ast-node)
           (:value ast-node)
           (d/recur (proto/inject-into {:cache cache} ast-node) cache))
-        (d/chain
+        (d/chain'
          (let [by-type (group-by proto/resource-name fetches)]
            (apply d/zip (map fetch-group by-type)))
          (fn [fetch-groups]
