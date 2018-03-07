@@ -1,4 +1,4 @@
-(defproject muse "0.4.3-alpha4"
+(defproject muse "0.4.4"
   :description "A Clojure library that simplifies access to remote data (db, cache, http services)"
   :url "https://github.com/kachayev/muse"
   :license {:name "The MIT License"
@@ -23,8 +23,8 @@
                                    :pretty-print true}}]}
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.8.0"]
-                                  [org.clojure/core.async "0.2.385"]
+                                  [org.clojure/core.async "0.4.474"]
                                   [cats "0.4.0"]
-                                  [org.clojure/clojurescript "1.9.293"]]
+                                  [org.clojure/clojurescript "1.9.946"]]
                    :plugins [[lein-cljsbuild "1.1.4"]]}}
   :repositories [["clojars" {:sign-releases false}]])
