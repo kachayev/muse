@@ -5,8 +5,10 @@
 Add to your project:
 
 ```clojure
-[muse "0.4.3-alpha3"]
+[muse2/muse "0.4.4"]
 ```
+
+Note weird `muse2` artefact group id, due to Clojars [issue](https://github.com/clojars/clojars-web/issues/682). Hope, it's a temporary solution.
 
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
@@ -75,7 +77,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.3-alpha3"]
+[muse2/muse "0.4.4"]
 ```
 
 All functions are located in `muse.core`:
