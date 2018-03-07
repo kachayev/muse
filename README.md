@@ -5,7 +5,7 @@
 Add to your project:
 
 ```clojure
-[muse "0.4.3-alpha4"]
+[muse "0.4.3-alpha3"]
 ```
 
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
@@ -75,7 +75,7 @@ You can also use monad interface with `cats` library:
 Include the following to your lein `project.clj` dependencies:
 
 ```clojure
-[muse "0.4.3-alpha4"]
+[muse "0.4.3-alpha3"]
 ```
 
 All functions are located in `muse.core`:
