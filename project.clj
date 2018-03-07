@@ -24,6 +24,7 @@
                                   [org.clojure/core.async "0.4.474"]
                                   [cats "0.4.0"]
                                   [org.clojure/clojurescript "1.9.946"]]
-                   :plugins [[lein-cljsbuild "1.1.4"]]}}
+                   :plugins [[lein-cljsbuild "1.1.4"]
+                             [lein-jammin "0.1.1"]]}}
   :repositories [["clojars" {:sign-releases false}]]
   :deploy-repositories [["releases" :clojars]])

@@ -1,9 +1,7 @@
 dist: trusty
 language: clojure
 
-script:
-  - ./.travis/test-cljs.sh
-  - ./.travis/test-clj.sh
+script: lein do clean, jammin 300 test
 
 jdk:
   - oraclejdk8
