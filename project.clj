@@ -4,8 +4,8 @@
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"
             :distribution :repo}
-  :global-vars {*warn-on-reflection* false}
-  :dependencies [[manifold "0.1.6-alpha4"]]
+  :global-vars {*warn-on-reflection* true}
+  :dependencies [[manifold "0.1.6"]]
   :test-paths ["test"]
 
   :cljsbuild {:test-commands {"test" ["node" "output/tests.js"]}
