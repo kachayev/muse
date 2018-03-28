@@ -70,17 +70,23 @@
       (satisfies? proto/BatchedSource r)
       (satisfies? proto/MuseAST r)))
 
-;; xxx: sets and lists
-;; xxx: reduce code duplication
+(defn pull-from-collection [reduce-into this spec]
+  (let [blocks (map #(pull % spec) this)]
+    (if-not (some fetch? blocks)
+      (muse/value (into reduce-into blocks))
+      (->> (muse/collect (map #(if (fetch? %) % (muse/value %)) blocks))
+           (muse/fmap (partial into reduce-into))))))
+
 ;; xxx: documentation
+;; xxx: tests
 ;; xxx: quick links in muse readme
 (extend-protocol PullSource
   clojure.lang.IPersistentList
   (pull-from [this spec]
-    (throw (RuntimeException. "not implemented")))
+    (pull-from-collection '() this spec))
   clojure.lang.IPersistentSet
   (pull-from [this spec]
-    (throw (RuntimeException. "not implemented")))
+    (pull-from-collection #{} this spec))
   clojure.lang.ISeq
   (pull-from [this spec]
     (let [blocks (map #(pull % spec) this)]
@@ -89,11 +95,7 @@
         (muse/collect (map #(if (fetch? %) % (muse/value %)) blocks)))))
   clojure.lang.IPersistentVector
   (pull-from [this spec]
-    (let [blocks (map #(pull % spec) this)]
-      (if-not (some fetch? blocks)
-        (muse/value (into [] blocks))
-        (->> (muse/collect (map #(if (fetch? %) % (muse/value %)) blocks))
-             (muse/fmap (partial into []))))))
+    (pull-from-collection [] this spec))
   clojure.lang.IPersistentMap
   (pull-from [this spec]
     (let [blocks (->> spec
