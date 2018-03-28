@@ -52,20 +52,22 @@
               (into {} (map vector ids fetch-results))))))))))
 
 (defn interpret-ast
-  [ast]
-  (d/loop [ast-node ast cache {}]
-    (let [fetches (proto/next-level ast-node)]
-      (if (empty? fetches)
-        (if (proto/done? ast-node)
-          (:value ast-node)
-          (d/recur (proto/inject-into {:cache cache} ast-node) cache))
-        (d/chain'
-         (let [by-type (group-by proto/resource-name fetches)]
-           (apply d/zip (map fetch-group by-type)))
-         (fn [fetch-groups]
-           (let [to-cache (into {} fetch-groups)
-                 next-cache (into cache to-cache)]
-             (d/recur (proto/inject-into {:cache next-cache} ast-node) next-cache))))))))
+  ([ast]
+   (interpret-ast ast {}))
+  ([ast {:keys [pull]}]
+   (d/loop [ast-node ast cache {}]
+     (let [fetches (proto/next-level ast-node)]
+       (if (empty? fetches)
+         (if (proto/done? ast-node)
+           (:value ast-node)
+           (d/recur (proto/inject-into {:cache cache} ast-node) cache))
+         (d/chain'
+          (let [by-type (group-by proto/resource-name fetches)]
+            (apply d/zip (map fetch-group by-type)))
+          (fn [fetch-groups]
+            (let [to-cache (into {} fetch-groups)
+                  next-cache (into cache to-cache)]
+              (d/recur (proto/inject-into {:cache next-cache} ast-node) next-cache)))))))))
 
 (defmacro run!
   "Asynchronously executes the body, returning immediately to the
@@ -75,8 +77,10 @@
    * batch calls to the same data source (when applicable)
    Returns a channel which will receive the result of
    the body when completed."
-  [ast]
-  `(with-monad proto/ast-monad (interpret-ast ~ast)))
+  ([ast]
+   `(run! ~ast {}))
+  ([ast spec]
+   `(with-monad proto/ast-monad (interpret-ast ~ast ~spec))))
 
 (defmacro run!!
   "takes a val from the channel returned by (run! ast).
@@ -85,5 +89,7 @@
    (in milliseconds) is reached before a value is available."
   ([ast]
    `(deref (run! ~ast)))
+  ([ast spec]
+   `(deref (run! ~ast ~spec)))
   ([ast timeout-ms timeout-val]
    `(deref (d/timeout! (run! ~ast) ~timeout-ms ~timeout-val))))
