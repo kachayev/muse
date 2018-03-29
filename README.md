@@ -8,6 +8,12 @@ Add to your project (note weird `muse2` artefact group id as Clojars now denies 
 [muse2/muse "0.4.4"]
 ```
 
+Latest pre-release version if you want to play with the latest features:
+
+```clojure
+[muse2/muse "0.4.5-alpha1"]
+```
+
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
 Oftentimes, your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
