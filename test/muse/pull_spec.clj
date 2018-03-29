@@ -62,7 +62,7 @@
     (is (= 1 (:id r)))
     (is (some? (:sender r)))))
 
-(deftest pull-everything-as-is
+(deftest pull-a-single-key-from-map
   (let [r (muse/run!! (pull/pull (Message. 1) [:text]))]
     (is (string? (:text r)))
     (is (nil? (:id r)))
