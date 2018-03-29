@@ -27,4 +27,5 @@
                    :source-paths ["src" "dev"]
                    :repl-options {:init-ns user}
                    :plugins [[lein-cljsbuild "1.1.4"]
-                             [lein-jammin "0.1.1"]]}})
+                             [lein-jammin "0.1.1"]]}}
+  :repositories [["clojars" {:sign-releases false}]])
