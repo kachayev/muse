@@ -5,7 +5,18 @@
 (defprotocol PullSource
   (pull-from [this spec]))
 
-(defn pull [data spec]
+(defn pull
+  "Takes muse AST and returns a new AST that would perform *only* fetches
+   specified by given `spec` (applied recursively).
+
+   `spec` might be one of the following:
+
+   - `'*` stands for 'everything as is'
+   - vector of per-key specifications in the form of `{:key :value-spec}`
+
+   A single keyword in the vector is equal to `{:key '*}`.
+   See `muse.pull-spec` tests for samples of the code."
+  [data spec]
   (cond
     (nil? spec)
     nil
@@ -37,9 +48,6 @@
       (->> (muse/collect (map #(if (fetch? %) % (muse/value %)) blocks))
            (muse/fmap (partial into reduce-into))))))
 
-;; xxx: documentation
-;; xxx: tests
-;; xxx: quick links in muse readme
 (extend-protocol PullSource
   clojure.lang.IPersistentList
   (pull-from [this spec]
