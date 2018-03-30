@@ -19,21 +19,19 @@
   ([data]
    (pull data '*))
   ([data spec]
+   {:pre [(or (= '* spec)
+              (vector? spec))]}
    (cond
      (nil? spec)
      nil
-
-     (= '* spec)
-     data
-
-     (not (vector? spec))
-     (throw (IllegalArgumentException. "invalid pull spec"))
 
      (satisfies? proto/DataSource data)
      (muse/flat-map #(pull % spec) data)
 
      (satisfies? PullSource data)
-     (pull-from data spec)
+     (if (= '* spec)
+       data
+       (pull-from data spec))
 
      :else
      data)))
