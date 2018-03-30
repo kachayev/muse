@@ -26,13 +26,14 @@
      (nil? spec)
      nil
 
+     (= '* spec)
+     data
+
      (satisfies? proto/DataSource data)
      (muse/flat-map #(pull % spec) data)
 
      (satisfies? PullSource data)
-     (if (= '* spec)
-       data
-       (pull-from data spec))
+     (pull-from data spec)
 
      :else
      data)))
