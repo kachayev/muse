@@ -19,7 +19,8 @@
   ([data]
    (pull data '*))
   ([data spec]
-   {:pre [(or (= '* spec)
+   {:pre [(or (nil? spec)
+              (= '* spec)
               (vector? spec))]}
    (cond
      (nil? spec)
