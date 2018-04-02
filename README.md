@@ -16,9 +16,9 @@ Latest pre-release version if you want to play with the latest features:
 
 ## What's That?
 
-*Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
+**Muse** is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
-Oftentimes, your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
+Oftentimes, your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. **Muse** helps you to keep your business logic clear of low-level details while performing efficiently:
 
 * batch multiple requests to the same data source
 * request data from multiple data sources concurrently
@@ -46,7 +46,7 @@ A core problem of many systems is balancing expressiveness against performance.
 
 Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to be fetched concurrently in a single batch. Furthermore, if `x` and `y` refer to the same person, you don't want to redundantly re-fetch their friend list.
 
-*Muse* allows your data fetches to be implicitly concurrent:
+**Muse** allows your data fetches to be implicitly concurrent:
 
 ```clojure
 (defn num-common-friends [x y]
