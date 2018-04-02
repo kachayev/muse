@@ -16,25 +16,27 @@
 
    A single keyword in the vector is equal to `{:key '*}`.
    See `muse.pull-spec` tests for samples of the code."
-  [data spec]
-  (cond
-    (nil? spec)
-    nil
+  ([data]
+   (pull data '*))
+  ([data spec]
+   {:pre [(or (nil? spec)
+              (= '* spec)
+              (vector? spec))]}
+   (cond
+     (nil? spec)
+     nil
 
-    (= '* spec)
-    data
+     (= '* spec)
+     data
 
-    (not (vector? spec))
-    (throw (IllegalArgumentException. "invalid pull spec"))
+     (satisfies? proto/DataSource data)
+     (muse/flat-map #(pull % spec) data)
 
-    (satisfies? proto/DataSource data)
-    (muse/flat-map #(pull % spec) data)
+     (satisfies? PullSource data)
+     (pull-from data spec)
 
-    (satisfies? PullSource data)
-    (pull-from data spec)
-
-    :else
-    data))
+     :else
+     data)))
 
 (defn- fetch? [r]
   (or (satisfies? proto/DataSource r)

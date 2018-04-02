@@ -1,4 +1,4 @@
-(defproject muse2/muse "0.4.4-SNAPSHOT"
+(defproject muse2/muse "0.4.5-alpha2"
   :description "A Clojure library that simplifies access to remote data"
   :url "https://github.com/kachayev/muse"
   :license {:name "The MIT License"
@@ -27,4 +27,5 @@
                    :source-paths ["src" "dev"]
                    :repl-options {:init-ns user}
                    :plugins [[lein-cljsbuild "1.1.4"]
-                             [lein-jammin "0.1.1"]]}})
+                             [lein-jammin "0.1.1"]]}}
+  :repositories [["clojars" {:sign-releases false}]])
