@@ -60,7 +60,8 @@
 (deftest pull-everything-as-is
   (let [r (muse/run!! (pull/pull (Message. 1) '*))]
     (is (= 1 (:id r)))
-    (is (some? (:sender r)))))
+    (is (some? (:sender r)))
+    (is (= "Winston" (-> r :sender :firstName)))))
 
 (deftest pull-a-single-key-from-map
   (let [r (muse/run!! (pull/pull (Message. 1) [:text]))]

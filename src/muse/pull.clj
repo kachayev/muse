@@ -26,14 +26,14 @@
      (nil? spec)
      nil
 
-     (= '* spec)
-     data
-
      (satisfies? proto/DataSource data)
      (muse/flat-map #(pull % spec) data)
 
      (satisfies? PullSource data)
      (pull-from data spec)
+
+     (= '* spec)
+     data
 
      :else
      data)))
@@ -72,7 +72,7 @@
 
   clojure.lang.IPersistentMap
   (pull-from [this spec]
-    (let [blocks (->> spec
+    (let [blocks (->> (if (= '* spec) (keys this) spec)
                       (map (fn [k]
                              (let [[key next-spec] (if (map? k)
                                                      (first k)
