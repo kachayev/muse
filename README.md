@@ -35,6 +35,21 @@ Talks:
 
 * "Reinventing Haxl: Efficient, Concurrent and Concise Data Access" at EuroClojure 2015: [Video](https://goo.gl/masrsz), [Slides](https://goo.gl/h4Zuvr)
 
+## Content
+
+1. [The Idea](https://github.com/kachayev/muse#the-idea)
+2. [Usage](https://github.com/kachayev/muse#usage)
+3. [Quick Start](https://github.com/kachayev/muse#quickstart)
+4. [Manifold](https://github.com/kachayev/muse#manifold)
+5. [Pull API](https://github.com/kachayev/muse#pull-api)
+6. [Misc](https://github.com/kachayev/muse#misc)
+7. [Examples](https://github.com/kachayev/muse#real-world-data-sources)
+8. [How Does It Work?](https://github.com/kachayev/muse#how-does-it-work)
+9. [Roadmap](https://github.com/kachayev/muse#todo--ideas)
+10. [Known Restrictions](https://github.com/kachayev/muse#known-restrictions)
+11. [License](https://github.com/kachayev/muse#license)
+12. [Contribute](https://github.com/kachayev/muse#contribute)
+
 ## The Idea
 
 A core problem of many systems is balancing expressiveness against performance.
@@ -458,10 +473,16 @@ You can do the same tricks with [Redis](https://github.com/benashford/redis-asyn
 
 (any support is very welcome)
 
-- [ ] catch & propagate exceptions, provide a simple way to deal with timeouts
+- [ ] catch & propagate exceptions
+- [ ] a simple way to deal with timeouts and other concurrency pitfalls
 - [ ] debuggability with nice visualization for AST & fetching (attaching special meta variables to each AST node during the execution)
-- [ ] clean up code, tests coverage
-- [ ] build node-relations delarative notation on top of low-level API to describe your data
+- [x] build node-relations delarative notation on top of low-level API to describe your data - done with a new [Pull API](https://github.com/kachayev/muse/blob/master/docs/pull.md)
+- [ ] clean up code, generative tests coverage
+
+Still thinking about:
+
+- [ ] make `manifold`-first implementation as it's more stable than `core.async` one
+- [ ] move ClojureScript support to a separate library, as it becomes problematic to keep both in sync, due to the difference in the underlying concurrency handling
 
 ## Known Restrictions
 
