@@ -1,4 +1,4 @@
-(defproject muse2/muse "0.4.5-alpha2"
+(defproject muse2/muse "0.4.5-alpha3"
   :description "A Clojure library that simplifies access to remote data"
   :url "https://github.com/kachayev/muse"
   :license {:name "The MIT License"
