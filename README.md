@@ -14,6 +14,8 @@ Latest pre-release version if you want to play with the latest features:
 [muse2/muse "0.4.5-alpha3"]
 ```
 
+## What's That?
+
 *Muse* is a Clojure library that works hard to make your relationship with remote data simple & enjoyable. We believe that concurrent code can be elegant and efficient at the same time.
 
 Oftentimes, your business logic relies on remote data that you need to fetch from different sources: databases, caches, web services or 3rd party APIs, and you can't mess things up. *Muse* helps you to keep your business logic clear of low-level details while performing efficiently:
@@ -38,8 +40,7 @@ Talks:
 A core problem of many systems is balancing expressiveness against performance.
 
 ```clojure
-(defn num-common-friends
-  [x y]
+(defn num-common-friends [x y]
   (count (set/intersection (friends-of x) (friends-of y))))
 ```
 
@@ -48,16 +49,14 @@ Here, `(friends-of x)` and `(friends-of y)` are independent, and you want it to 
 *Muse* allows your data fetches to be implicitly concurrent:
 
 ```clojure
-(defn num-common-friends
-  [x y]
+(defn num-common-friends [x y]
   (run! (fmap count (fmap set/intersection (friends-of x) (friends-of y)))))
 ```
 
 Mapping over lists will also run concurrently:
 
 ```clojure
-(defn friends-of-friends
-  [id]
+(defn friends-of-friends [id]
   (run! (->> id
              friends-of
              (traverse friends-of)
@@ -67,8 +66,7 @@ Mapping over lists will also run concurrently:
 You can also use monad interface with `cats` library:
 
 ```clojure
-(defn get-post
-  [id]
+(defn get-post [id]
   (run! (m/mlet [post (fetch-post id)
                  author (fetch-user (:author-id post))]
           (m/return (assoc post :author author)))))
@@ -84,10 +82,23 @@ Include the following to your lein `project.clj` dependencies:
 [muse2/muse "0.4.4"]
 ```
 
+or experimental `alpha` build, if you're brave enough:
+
+```clojure
+[muse2/muse "0.4.5-alpha3"]
+```
+
 All functions are located in `muse.core`:
 
 ```clojure
 (require '[muse.core :as muse])
+```
+
+If you need to use [manifold](https://github.com/ztellman/manifold)-based version, please do
+the following:
+
+```clojure
+(require '[muse.deferred :as muse])
 ```
 
 ## Quickstart
@@ -273,13 +284,19 @@ A few notes on `BatchedSource` protocol as it might be kinda tricky from the fir
   (resource-id [_] n))
 
 (muse/run! (muse/fmap inc (Numeric. 21)))
-# => << 43 >>
+user=> << 43 >>
 
 (muse/run!! (muse/fmap inc (Numeric. 21)))
-# => 43
+user=> 43
 ```
 
 Read more about `manifold` library [here](https://github.com/ztellman/manifold). Please note, that muse does not allow to mix different execution strategies in a single AST. In case you mess channels and deferred in your code, you have explitely convert them into a single source of truth before passing them to `muse`.
+
+## Pull API
+
+Pull API is an extension build on top of Muse API as a higher level layer to help you to simplify data sources definitions and provide you with even more flexible way to optimize fetches when actual data usage is not defined in advance (yep, waving to GraghQL and friends right now).
+
+Find more in [documentation](https://github.com/kachayev/muse/blob/master/docs/pull.md#pull-api).
 
 ## Misc
 
