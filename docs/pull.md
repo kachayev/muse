@@ -121,7 +121,15 @@ user=> (muse/run!! (pull/pull (ChatThread. "9V5x5xxpS") [:text {:sender [:firstN
   :sender {:firstName "Shannon"}}]
 ```
 
-Quick rules how to define pull spec:
+Pull spec is defined recursively as following:
+
+```
+spec :: '* || [inner-spec]
+inner-spec :: keyword? || {keyword? spec}
+```
+
+Invalid spec throws `AssertionError` **before** fetching any data. Quick rules how to
+define pull spec:
 
  - `'*` means resolve all references and return "as is"
  - `[:text]` equals to `[{:text '*}]`

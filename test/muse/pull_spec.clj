@@ -52,6 +52,14 @@
 ;; test cases
 ;;
 
+(deftest invalid-spec-throws
+  (is (thrown? AssertionError
+               (pull/pull (Message. 1) :id)))
+  (is (thrown? AssertionError
+               (pull/pull (Message. 1) {:id '*})))
+  (is (thrown? AssertionError
+               (pull/pull (Message. 1) ['* '* '*]))))
+
 (deftest no-pull-spec-given
   (let [r (muse/run!! (Message. 1))]
     (is (= 1 (:id r)))
