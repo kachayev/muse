@@ -5,23 +5,39 @@
 (defprotocol PullSource
   (pull-from [this spec]))
 
+(declare valid-spec?)
+
+(defn valid-inner-spec? [spec]
+  (or (keyword? spec)
+      (and (map? spec)
+           (= 1 (count spec))
+           (let [[k v] (first spec)]
+             (and (keyword? k)
+                  (valid-spec? v))))))
+
+(defn valid-spec? [spec]
+  (or (= '* spec)
+      (and (sequential? spec)
+           (every? valid-inner-spec? spec))))
+
 (defn pull
   "Takes muse AST and returns a new AST that would perform *only* fetches
    specified by given `spec` (applied recursively).
 
-   `spec` might be one of the following:
+   `spec` is defined recursively as following:
 
-   - `'*` stands for 'everything as is'
-   - vector of per-key specifications in the form of `{:key :value-spec}`
+   - spec :: '* || [inner-spec]
+   - inner-spec :: keyword? || {keyword? spec}
 
-   A single keyword in the vector is equal to `{:key '*}`.
+   A single keyword is equal to `{keyword? '*}`.
+
+   When invalid spec given, `pull` throws `AssertionError` before any processing is done.
+
    See `muse.pull-spec` tests for samples of the code."
   ([data]
    (pull data '*))
   ([data spec]
-   {:pre [(or (nil? spec)
-              (= '* spec)
-              (vector? spec))]}
+   {:pre [(valid-spec? spec)]}
    (cond
      (nil? spec)
      nil
