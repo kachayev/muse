@@ -1,6 +1,6 @@
 # Pull API
 
-Pull API is an extension build on top of Muse API as a higher level layer to help you to
+Pull API is an extension built on top of Muse API as a higher level layer to help you to
 simplify data sources definitions and provide you with even more flexible way to optimize
 fetches when actual data usage is not defined in advance (yep, waving to GraghQL and friends
 right now).
@@ -96,8 +96,8 @@ Note, that now you work with your data structures in a logical top-to-bottom man
 when necessary into appropriate data blocks, remaining the rest of `muse` functionality, like
 caching, batching and smart requests scheduling.
 
-Being more consice and straightforward this approach opens to us another opportunity: what if in
-some cases you don't need fetch `:sender` (working on `git shortlog` or implementing GraphQL?). Well
+Being more consice and straightforward this approach opens another opportunity: what if in
+some cases you don't need fetch `:sender` (working on `git shortlog` or implementing GraphQL?). Well,
 in such a case you can just skip those references and avoid redundant requests! Introducing the same
 functionality into generic muse AST is a pretty clumsy task, as you need to branch all of you
 `fmap` and `flat-map` wrappers properly. Doing this with Pull API is a pretty simple and intuitive:
