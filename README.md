@@ -11,7 +11,7 @@ Add to your project (note weird `muse2` artefact group id as Clojars now denies 
 Latest pre-release version if you want to play with the latest features:
 
 ```clojure
-[muse2/muse "0.4.5-alpha3"]
+[muse2/muse "0.4.5-alpha4"]
 ```
 
 ## What's That?
@@ -100,7 +100,7 @@ Include the following to your lein `project.clj` dependencies:
 or experimental `alpha` build, if you're brave enough:
 
 ```clojure
-[muse2/muse "0.4.5-alpha3"]
+[muse2/muse "0.4.5-alpha4"]
 ```
 
 All functions are located in `muse.core`:
