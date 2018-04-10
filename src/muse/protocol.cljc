@@ -213,7 +213,7 @@
     (MuseDone. v)))
 
 (defn failure [meta]
-  (MuseFailure. meta))
+  (MuseFailure. {:cause meta}))
 
 (defn fmap [f muse & muses]
   (if (and (empty? muses)

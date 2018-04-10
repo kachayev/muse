@@ -59,8 +59,8 @@
         (cond
           (proto/safe-fetch-failed? ast-node)
           (throw (ex-info
-                  "AST runner failed"
-                  {:cause (proto/failure-meta ast-node)}))
+                  "Muse runner failed"
+                  (proto/failure-meta ast-node)))
           
           (proto/done? ast-node)
           (:value ast-node)
