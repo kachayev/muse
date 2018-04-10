@@ -92,6 +92,16 @@
   (assert-ast 42 (muse/flat-map muse/value (muse/value 42)))
   (assert-ast [43 43] (muse/flat-map mk-pair (muse/fmap inc (muse/value 42)))))
 
+(deftest ast-failure-propagation
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (muse/failure "Boom :("))))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (muse/fmap inc (muse/failure "Boom :(")))))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (muse/flat-map mk-pair (muse/failure "Boom :(")))))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (muse/flat-map mk-pair (muse/fmap inc (muse/failure "Boom :(")))))))
+
 (defrecord Slowpoke [id timer]
   muse/DataSource
   (fetch [_] (d/future (Thread/sleep timer) id)))
