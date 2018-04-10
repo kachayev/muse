@@ -8,6 +8,7 @@
 (def fmap proto/fmap)
 (def flat-map proto/flat-map)
 (def value proto/value)
+(def failure proto/failure)
 (def <$> proto/<$>)
 (def >>= proto/>>=)
 (def collect proto/collect)
@@ -51,13 +52,20 @@
             (let [ids (map proto/cache-id all-res)]
               (into {} (map vector ids fetch-results))))))))))
 
-(defn interpret-ast
-  [ast]
+(defn interpret-ast [ast]
   (d/loop [ast-node ast cache {}]
     (let [fetches (proto/next-level ast-node)]
       (if (empty? fetches)
-        (if (proto/done? ast-node)
+        (cond
+          (proto/safe-fetch-failed? ast-node)
+          (throw (ex-info
+                  "AST runner failed"
+                  {:cause (proto/failure-meta ast-node)}))
+          
+          (proto/done? ast-node)
           (:value ast-node)
+
+          :else
           (d/recur (proto/inject-into {:cache cache} ast-node) cache))
         (d/chain'
          (let [by-type (group-by proto/resource-name fetches)]
