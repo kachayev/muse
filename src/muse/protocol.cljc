@@ -44,6 +44,10 @@
    See example here: https://github.com/kachayev/muse/blob/master/docs/sql.md"
   (fetch-multi [this resources]))
 
+(defprotocol FetchFailure
+  (fetch-failed? [this])
+  (failure-meta [this]))
+
 (defn- pair-name-id? [id]
   (and (sequential? id) (= 2 (count id))))
 
@@ -61,6 +65,11 @@
                  " Please, use record definition (for automatic resolve)"
                  " or LabeledSource protocol (to specify it manually)"))
     value))
+
+(defn safe-fetch-failed? [node]
+  (if-not (satisfies? FetchFailure node)
+    false
+    (fetch-failed? node)))
 
 (defprotocol MuseAST
   (childs [this])
@@ -82,13 +91,27 @@
   (done? [_] true)
   (inject [this _] this))
 
-(defn labeled-cache-id
-  [res]
+(defrecord MuseFailure [meta]
+  proto/Context
+  (get-context [_] ast-monad)
+
+  ComposedAST
+  (compose-ast [this _] this)
+
+  MuseAST
+  (childs [_] nil)
+  (done? [_] true)
+  (inject [this _] this)
+
+  FetchFailure
+  (fetch-failed? [_] true)
+  (failure-meta [_] meta))
+
+(defn labeled-cache-id [res]
   (let [id (resource-id res)]
     (if (pair-name-id? id) (second id) id)))
 
-(defn cache-id
-  [res]
+(defn cache-id [res]
   (let [id (if (satisfies? LabeledSource res)
              (labeled-cache-id res)
              (:id res))]
@@ -97,8 +120,7 @@
                  " Please, use LabeledSource protocol or record with :id key"))
     id))
 
-(defn cache-path
-  [res]
+(defn cache-path [res]
   [(resource-name res) (cache-id res)])
 
 (defn cached-or [env res]
@@ -112,15 +134,16 @@
     (cached-or env node)
     (inject node env)))
 
-(defn print-node
-  [node]
+(defn print-node [node]
   (if (satisfies? DataSource node)
     (str (resource-name node) "[" (cache-id node) "]")
     (with-out-str (print node))))
 
-(defn print-childs
-  [nodes]
+(defn print-childs [nodes]
   (s/join " " (map print-node nodes)))
+
+(defn ready? [next-level]
+  (empty? (remove done? next-level)))
 
 (deftype MuseMap [f values]
   proto/Context
@@ -134,15 +157,14 @@
   (done? [_] false)
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
-      (if (= (count next) (count (filter done? next)))
+      (if (ready? next)
         (MuseDone. (apply f (map :value next)))
         (MuseMap. f next))))
 
   Object
   (toString [_] (str "(" f " " (print-childs values) ")")))
 
-(defn assert-ast!
-  [ast]
+(defn assert-ast! [ast]
   (assert (or (satisfies? MuseAST ast)
               (satisfies? DataSource ast))))
 
@@ -155,10 +177,12 @@
   (done? [_] false)
   (inject [_ env]
     (let [next (map (partial inject-into env) values)]
-      (if (= (count next) (count (filter done? next)))
+      (if (ready? next)
         (let [result (apply f (map :value next))]
           ;; xxx: refactor to avoid dummy leaves creation
-          (if (satisfies? DataSource result) (MuseMap. identity [result]) result))
+          (if (satisfies? DataSource result)
+            (MuseMap. identity [result])
+            result))
         (MuseFlatMap. f next))))
 
   Object
@@ -176,44 +200,42 @@
   (done? [_] false)
   (inject [_ env]
     (let [next (inject-into env value)]
-      (if (done? next) (MuseDone. (:value next)) next)))
+      (if-not (done? next)
+        next
+        (MuseDone. (:value next)))))
 
   Object
   (toString [_] (print-node value)))
 
-(defn value
-  [v]
+(defn value [v]
   (if (satisfies? DataSource value)
     (MuseValue. v)
     (MuseDone. v)))
 
-(defn fmap
-  [f muse & muses]
+(defn failure [meta]
+  (MuseFailure. meta))
+
+(defn fmap [f muse & muses]
   (if (and (empty? muses)
            (satisfies? ComposedAST muse))
     (compose-ast muse f)
     (MuseMap. f (cons muse muses))))
 
-;; xxx: make it compatible with algo.generic and cats libraries
-(defn flat-map
-  [f muse & muses]
+(defn flat-map [f muse & muses]
   (MuseFlatMap. f (cons muse muses)))
 
 (def <$> fmap)
 (defn >>= [muse f] (flat-map f muse))
 
-(defn collect
-  [muses]
+(defn collect [muses]
   (if (empty? muses)
     (value [])
     (apply (partial fmap vector) muses)))
 
-(defn traverse
-  [f muses]
+(defn traverse [f muses]
   (flat-map #(collect (map f %)) muses))
 
-(defn next-level
-  [ast-node]
+(defn next-level [ast-node]
   (if (satisfies? DataSource ast-node)
     (list ast-node)
     (if-let [values (childs ast-node)]
