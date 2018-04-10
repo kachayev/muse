@@ -98,9 +98,9 @@
   (is (thrown? clojure.lang.ExceptionInfo
                (muse/run!! (muse/fmap inc (muse/failure "Boom :(")))))
   (is (thrown? clojure.lang.ExceptionInfo
-               (muse/run!! (muse/flat-map mk-pair (muse/failure "Boom :(")))))
+               (muse/run!! (muse/flat-map inc (muse/failure "Boom :(")))))
   (is (thrown? clojure.lang.ExceptionInfo
-               (muse/run!! (muse/flat-map mk-pair (muse/fmap inc (muse/failure "Boom :(")))))))
+               (muse/run!! (muse/flat-map inc (muse/fmap inc (muse/failure "Boom :(")))))))
 
 (defrecord Slowpoke [id timer]
   muse/DataSource

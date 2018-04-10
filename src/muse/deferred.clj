@@ -33,7 +33,9 @@
      (if (empty? tail)
        (d/chain
         (fetch head)
-        #(-> {(proto/cache-id head) %}))
+        (fn [result]
+          (proto/force-failure! [result])
+          {(proto/cache-id head) result}))
        (if (satisfies? BatchedSource head)
          (d/chain
           (fetch-multi head tail)
@@ -45,10 +47,13 @@
                                 {:inputs group
                                  :output-size (count results)
                                  :expected-size (count all-res)}))
-                (into {} (map vector (map proto/cache-id all-res) results))))))
+                (do
+                  (proto/force-failure! results)
+                  (into {} (map vector (map proto/cache-id all-res) results)))))))
          (d/chain'
           (apply d/zip (map fetch all-res))
           (fn [fetch-results]
+            (proto/force-failure! fetch-results)
             (let [ids (map proto/cache-id all-res)]
               (into {} (map vector ids fetch-results))))))))))
 

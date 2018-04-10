@@ -112,8 +112,14 @@
     (if (pair-name-id? id) (second id) id)))
 
 (defn cache-id [res]
-  (let [id (if (satisfies? LabeledSource res)
+  (let [id (cond
+             (safe-fetch-failed? res)
+             ::failure
+
+             (satisfies? LabeledSource res)
              (labeled-cache-id res)
+
+             :else
              (:id res))]
     (assert (not (nil? id))
             (str "Resource is not identifiable: " res
@@ -145,6 +151,15 @@
 (defn ready? [next-level]
   (empty? (remove done? next-level)))
 
+(defn force-failed [nodes]
+  (first (filter safe-fetch-failed? nodes)))
+
+(defn force-failure! [nodes]
+  (when-let [failed (force-failed nodes)]
+    (throw (ex-info
+            "Muse runner failed"
+            (failure-meta failed)))))
+
 (deftype MuseMap [f values]
   proto/Context
   (get-context [_] ast-monad)
@@ -156,9 +171,16 @@
   (childs [_] values)
   (done? [_] false)
   (inject [_ env]
-    (let [next (map (partial inject-into env) values)]
-      (if (ready? next)
+    (let [next (map (partial inject-into env) values)
+          first-failed (force-failed next)]
+      (cond
+        (some? first-failed)
+        first-failed
+
+        (ready? next)
         (MuseDone. (apply f (map :value next)))
+
+        :else
         (MuseMap. f next))))
 
   Object
@@ -176,13 +198,20 @@
   (childs [_] values)
   (done? [_] false)
   (inject [_ env]
-    (let [next (map (partial inject-into env) values)]
-      (if (ready? next)
+    (let [next (map (partial inject-into env) values)
+          first-failed (force-failed next)]
+      (cond
+        (some? first-failed)
+        first-failed
+
+        (ready? next)
         (let [result (apply f (map :value next))]
           ;; xxx: refactor to avoid dummy leaves creation
           (if (satisfies? DataSource result)
             (MuseMap. identity [result])
             result))
+
+        :else
         (MuseFlatMap. f next))))
 
   Object
