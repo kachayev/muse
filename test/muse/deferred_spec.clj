@@ -1,6 +1,7 @@
 (ns muse.deferred-spec
   (:require [clojure.test :refer (deftest is)]
             [muse.deferred :as muse :refer (fmap flat-map)]
+            [muse.protocol :as proto]
             [manifold.deferred :as d])
   (:refer-clojure :exclude (run!)))
 
@@ -101,6 +102,31 @@
                (muse/run!! (muse/flat-map inc (muse/failure "Boom :(")))))
   (is (thrown? clojure.lang.ExceptionInfo
                (muse/run!! (muse/flat-map inc (muse/fmap inc (muse/failure "Boom :(")))))))
+
+(extend-type clojure.lang.APersistentMap
+  proto/FetchFailure
+  (fetch-failed? [this] (contains? this :error))
+  (failure-meta [this] this))
+
+(defrecord MapWithError [reason]
+  muse/DataSource
+  (fetch [_] (d/success-deferred {:error reason}))
+  muse/LabeledSource
+  (resource-id [_] reason))
+
+(defrecord MapWithoutError [value]
+  muse/DataSource
+  (fetch [_] (d/success-deferred {:value value}))
+  muse/LabeledSource
+  (resource-id [_] value))
+
+(deftest custom-failure-propagation
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (MapWithError. "Boom"))))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (muse/run!! (muse/fmap merge
+                                      (MapWithoutError. 10)
+                                      (MapWithError. "Boom"))))))
 
 (defrecord Slowpoke [id timer]
   muse/DataSource
