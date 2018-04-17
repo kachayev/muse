@@ -42,13 +42,14 @@ Talks:
 3. [Quick Start](https://github.com/kachayev/muse#quickstart)
 4. [Manifold](https://github.com/kachayev/muse#manifold)
 5. [Pull API](https://github.com/kachayev/muse#pull-api)
-6. [Misc](https://github.com/kachayev/muse#misc)
-7. [Examples](https://github.com/kachayev/muse#real-world-data-sources)
-8. [How Does It Work?](https://github.com/kachayev/muse#how-does-it-work)
-9. [Roadmap](https://github.com/kachayev/muse#todo--ideas)
-10. [Known Restrictions](https://github.com/kachayev/muse#known-restrictions)
-11. [License](https://github.com/kachayev/muse#license)
-12. [Contribute](https://github.com/kachayev/muse#contribute)
+6. [Errors Handling](https://github.com/kachayev/muse#errors-handling)
+7. [Misc](https://github.com/kachayev/muse#misc)
+8. [Examples](https://github.com/kachayev/muse#real-world-data-sources)
+9. [How Does It Work?](https://github.com/kachayev/muse#how-does-it-work)
+10. [Roadmap](https://github.com/kachayev/muse#todo--ideas)
+11. [Known Restrictions](https://github.com/kachayev/muse#known-restrictions)
+12. [License](https://github.com/kachayev/muse#license)
+13. [Contribute](https://github.com/kachayev/muse#contribute)
 
 ## The Idea
 
@@ -312,6 +313,33 @@ Read more about `manifold` library [here](https://github.com/ztellman/manifold).
 Pull API is an extension build on top of Muse API as a higher level layer to help you to simplify data sources definitions and provide you with even more flexible way to optimize fetches when actual data usage is not defined in advance (yep, waving to GraghQL and friends right now).
 
 Find more in [documentation](https://github.com/kachayev/muse/blob/master/docs/pull.md#pull-api).
+
+## Errors Handling
+
+To help you to deal with failures and to avoid messing up with exceptions, `muse` provides you with `FetchFailure` protocol that gives you ability to mark any fetch as failed and short-circuit all subsequent fetches. Easiest way to use it is `muse/failure` helper, that works the same way as `muse/value` does, except it means that something went very wrong and there's no need to proceed with the AST traversal.
+
+If you already have a notion of an error in your code (like custom `Either` or `Maybe`) you can easily tell `muse` what values should be treated as errors. Quick example:
+
+```clojure
+(extend-type clojure.lang.APersistentMap
+  proto/FetchFailure
+  (fetch-failed? [this] (contains? this :error))
+  (failure-meta [this] this))
+```
+
+This tells us that any map with a key `:error` represents failure that should stop `muse` runner immediatly. Meaning, the following code
+
+```clojure
+(defrecord MapWithError [reason]
+  muse/DataSource
+  (fetch [_] (d/success-deferred {:error reason}))
+  muse/LabeledSource
+  (resource-id [_] reason))
+
+(muse/run!! (MapWithError. "Boom :(")))
+```
+
+throws an `clojure.lang.ExceptionInfo` with appropriate information on which node have failed.
 
 ## Misc
 
