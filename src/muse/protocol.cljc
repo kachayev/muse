@@ -148,8 +148,13 @@
 (defn print-childs [nodes]
   (s/join " " (map print-node nodes)))
 
+(defn node-done? [node]
+  (if (satisfies? DataSource node)
+    false
+    (done? node)))
+
 (defn ready? [next-level]
-  (empty? (remove done? next-level)))
+  (empty? (remove node-done? next-level)))
 
 (defn force-failed [nodes]
   (first (filter safe-fetch-failed? nodes)))
@@ -208,8 +213,8 @@
         (let [result (apply f (map :value next))]
           ;; xxx: refactor to avoid dummy leaves creation
           (if (satisfies? DataSource result)
-            (MuseMap. identity [result])
-            result))
+            (MuseMap. identity [(cached-or env result)])
+            (inject-into env result)))
 
         :else
         (MuseFlatMap. f next))))
