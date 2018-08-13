@@ -208,7 +208,7 @@
         (let [result (apply f (map :value next))]
           ;; xxx: refactor to avoid dummy leaves creation
           (if (satisfies? DataSource result)
-            (MuseMap. identity [result])
+            (MuseMap. identity [(cached-or env result)])
             result))
 
         :else
